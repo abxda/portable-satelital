@@ -16,7 +16,10 @@ credentials/satlab_ed25519.key
 venv/
 __pycache__/
 *.pyc
-dist/
+# SOLO el dist/ de la raiz (artefactos de build). OJO: NO usar "dist/" a secas:
+# se tragaria satlab-launcher/frontend/dist (la UI embebida) y el CI compila
+# un launcher SIN ventana (bug real de v0.1.0).
+/dist/
 *.exe
 sat-launcher
 meta-launcher
@@ -28,5 +31,5 @@ satlab-launcher/frontend/wailsjs/
 # === Portables / artefactos pesados (no van a git; van a HF/LFS) ===
 *.tar.gz
 *.tgz
-python/
+/python/
 notebooks/data/

@@ -25,6 +25,14 @@ jobs:
         with:
           go-version: "1.24"
 
+      - name: Guard - la UI embebida DEBE estar en el repo
+        shell: pwsh
+        run: |
+          if (-not (Test-Path satlab-launcher/frontend/dist/index.html)) {
+            Write-Error "FALTA satlab-launcher/frontend/dist/index.html: el exe saldria SIN ventana (bug v0.1.0). Revisa .gitignore."
+            exit 1
+          }
+
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.12.0
 
