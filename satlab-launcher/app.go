@@ -92,7 +92,44 @@ func root() string {
 	return filepath.Dir(exe)
 }
 
-func pythonExe() string { return filepath.Join(root(), "python", "python.exe") }
+// pythonExe / pyBinDirs / sitePackages: rutas del Python embebido por SO
+// (python-build-standalone: Windows plano, Unix bajo bin/ y lib/).
+func pythonExe() string {
+	if runtime.GOOS == "windows" {
+		return filepath.Join(root(), "python", "python.exe")
+	}
+	return filepath.Join(root(), "python", "bin", "python3")
+}
+
+func pyBinDirs(pyDir string) []string {
+	if runtime.GOOS == "windows" {
+		return []string{pyDir, filepath.Join(pyDir, "Scripts")}
+	}
+	return []string{filepath.Join(pyDir, "bin")}
+}
+
+func sitePackages(pyDir string) string {
+	if runtime.GOOS == "windows" {
+		return filepath.Join(pyDir, "Lib", "site-packages")
+	}
+	matches, _ := filepath.Glob(filepath.Join(pyDir, "lib", "python3.*", "site-packages"))
+	if len(matches) > 0 {
+		return matches[0]
+	}
+	return filepath.Join(pyDir, "lib", "python3.11", "site-packages")
+}
+
+func osLabel() string {
+	switch runtime.GOOS {
+	case "windows":
+		return "Windows · x86-64"
+	case "linux":
+		return "Linux · " + runtime.GOARCH
+	case "darwin":
+		return "macOS · " + runtime.GOARCH
+	}
+	return runtime.GOOS + " · " + runtime.GOARCH
+}
 
 // versionInfo es lo que Install deja escrito en .satlab_version: el linaje
 // local de QUÉ quedó instalado, de dónde y con qué hash.
@@ -119,7 +156,7 @@ func (a *App) GetState() State {
 	_, errPy := os.Stat(pythonExe())
 	return State{
 		LauncherVersion:  AppVersion,
-		OSLabel:          "Windows · x86-64",
+		OSLabel:          osLabel(),
 		Root:             root(),
 		PathHasSpaces:    strings.ContainsRune(root(), ' '),
 		Installed:        errPy == nil,
@@ -376,11 +413,12 @@ func (a *App) startJupyter() error {
 
 	env := os.Environ()
 	pyDir := filepath.Join(rt, "python")
-	// PATH con python\ y python\Scripts\ al frente: así `!pip`, `!python` y los
-	// entry-points instalados por los alumnos (%pip install …) funcionan dentro
-	// de los notebooks.
+	// PATH con los bin del python embebido al frente: así `!pip`, `!python` y
+	// los entry-points instalados por los alumnos (%pip install …) funcionan
+	// dentro de los notebooks. (Windows: python\ y python\Scripts\; Unix: bin/.)
+	pathPrefix := strings.Join(pyBinDirs(pyDir), string(os.PathListSeparator))
 	env = append(env,
-		"PATH="+pyDir+";"+filepath.Join(pyDir, "Scripts")+";"+os.Getenv("PATH"),
+		"PATH="+pathPrefix+string(os.PathListSeparator)+os.Getenv("PATH"),
 		"JUPYTER_CONFIG_DIR="+cfgDir,
 		"JUPYTER_DATA_DIR="+dataDir,
 		"JUPYTER_RUNTIME_DIR="+filepath.Join(dataDir, "runtime"),
@@ -388,7 +426,7 @@ func (a *App) startJupyter() error {
 	)
 	// GDAL/PROJ: normalmente las wheels se resuelven solas; si los datos están
 	// donde se espera, los exportamos explícitos (cinturón y tirantes).
-	sitePk := filepath.Join(pyDir, "Lib", "site-packages")
+	sitePk := sitePackages(pyDir)
 	if p := filepath.Join(sitePk, "pyproj", "proj_dir", "share", "proj"); isDir(p) {
 		env = append(env, "PROJ_DATA="+p)
 	}
