@@ -14,6 +14,7 @@ package main
 import (
 	"embed"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/wailsapp/wails/v2"
@@ -43,6 +44,10 @@ func main() {
 		Windows: &windows.Options{
 			WebviewIsTransparent: false,
 			WindowIsTranslucent:  false,
+			// Pulcritud: el caché de WebView2 vive DENTRO de la carpeta del
+			// laboratorio (no en %APPDATA%). Borrar la carpeta = desinstalar
+			// todo, sin rastros en el perfil del usuario.
+			WebviewUserDataPath: filepath.Join(root(), ".webview2"),
 		},
 	})
 	if err != nil {
