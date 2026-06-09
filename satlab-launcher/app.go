@@ -21,7 +21,7 @@ import (
 
 // AppVersion se compara contra el descriptor de self-update publicado en HF.
 // Súbela en cada release (y publica el descriptor con la MISMA versión).
-const AppVersion = "0.1.1"
+const AppVersion = "0.1.2"
 
 // App es el backend que la UI (frontend/dist) invoca vía bindings de Wails.
 type App struct {
@@ -33,9 +33,23 @@ type App struct {
 	jupyterPID int
 	labURL     string
 	noBrowser  bool // modo headless: no abrir el navegador
+
+	// bitácora para soporte: historial en memoria (lo pide la UI al abrir la
+	// pestaña Soporte) + archivo satlab.log junto al exe (se trunca por sesión).
+	logMu   sync.Mutex
+	history []string
+	satlog  *os.File
 }
 
-func NewApp() *App { return &App{} }
+func NewApp() *App {
+	a := &App{}
+	if f, err := os.OpenFile(filepath.Join(root(), "satlab.log"),
+		os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644); err == nil {
+		a.satlog = f
+	}
+	a.record("info", "SatLab v"+AppVersion+" iniciado en "+root())
+	return a
+}
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
@@ -134,9 +148,83 @@ func (a *App) emit(e uiEvent) {
 		wruntime.EventsEmit(a.ctx, "satlab", e)
 	}
 }
-func (a *App) log(level, msg string)   { a.emit(uiEvent{Kind: "log", Level: level, Msg: msg}) }
-func (a *App) pushState()              { a.emit(uiEvent{Kind: "state"}) }
-func (a *App) fail(msg string)         { a.emit(uiEvent{Kind: "error", Msg: msg}) }
+
+// record guarda una línea en el historial de soporte y en satlab.log.
+func (a *App) record(level, msg string) {
+	line := time.Now().Format("15:04:05") + " [" + level + "] " + msg
+	a.logMu.Lock()
+	a.history = append(a.history, line)
+	if len(a.history) > 500 {
+		a.history = a.history[len(a.history)-500:]
+	}
+	if a.satlog != nil {
+		fmt.Fprintln(a.satlog, line)
+	}
+	a.logMu.Unlock()
+}
+
+func (a *App) log(level, msg string) {
+	a.record(level, msg)
+	a.emit(uiEvent{Kind: "log", Level: level, Msg: msg})
+}
+func (a *App) pushState() { a.emit(uiEvent{Kind: "state"}) }
+func (a *App) fail(msg string) {
+	a.record("err", msg)
+	a.emit(uiEvent{Kind: "error", Msg: msg})
+}
+
+// --- soporte (pestaña de diagnóstico de la UI) --------------------------------
+
+// UiReady lo llama la interfaz cuando terminó de cargar y los bindings
+// funcionan. Queda en satlab.log: sirve para diagnosticar "ventana abre pero
+// UI muerta" (bug v0.1.1) y para las pruebas automatizadas de release.
+func (a *App) UiReady() {
+	a.record("ok", "UI LISTA (bindings y eventos funcionando)")
+}
+
+// GetLogHistory devuelve la bitácora de la sesión (la UI la pinta al abrir).
+func (a *App) GetLogHistory() []string {
+	a.logMu.Lock()
+	defer a.logMu.Unlock()
+	out := make([]string, len(a.history))
+	copy(out, a.history)
+	return out
+}
+
+// ReadJupyterLog devuelve la cola del jupyter.log (para la pestaña Soporte).
+func (a *App) ReadJupyterLog() string {
+	b, err := os.ReadFile(filepath.Join(root(), "jupyter.log"))
+	if err != nil {
+		return "(aún no hay registro de Jupyter: se crea al abrir el laboratorio)"
+	}
+	const max = 16000
+	if len(b) > max {
+		b = b[len(b)-max:]
+	}
+	return string(b)
+}
+
+// SupportBundle arma el diagnóstico completo listo para copiar/pegar en un
+// correo de soporte.
+func (a *App) SupportBundle() string {
+	st := a.GetState()
+	vi := readVersionInfo()
+	var sb strings.Builder
+	sb.WriteString("=== Diagnóstico SatLab ===\n")
+	sb.WriteString("Launcher: v" + st.LauncherVersion + "  ·  " + st.OSLabel + "\n")
+	sb.WriteString("Carpeta: " + st.Root + "\n")
+	fmt.Fprintf(&sb, "Instalado: %v  versión=%s  sha256=%s\n", st.Installed, vi.Version, vi.SHA256)
+	sb.WriteString("Fuente: " + vi.Source + "  instalado=" + vi.InstalledAt + "\n")
+	fmt.Fprintf(&sb, "Ejecutándose: %v  URL=%s\n", st.Running, st.LabURL)
+	sb.WriteString("Llave del catálogo: " + st.KeyFingerprint + "\n")
+	sb.WriteString("\n--- Bitácora de la sesión ---\n")
+	for _, l := range a.GetLogHistory() {
+		sb.WriteString(l + "\n")
+	}
+	sb.WriteString("\n--- Registro de Jupyter (cola) ---\n")
+	sb.WriteString(a.ReadJupyterLog())
+	return sb.String()
+}
 
 // --- instalación ---------------------------------------------------------------
 
@@ -189,6 +277,9 @@ func (a *App) doInstall() error {
 	}
 	a.log("info", fmt.Sprintf("Distribución %s (%s). Descargando de %s…", entry.Version, sizeLbl, entry.DownloadURL()))
 	tarball := filepath.Join(dst, ".satlab-download.tar.gz")
+	if ps := fetch.PartialSize(entry, tarball); ps > 0 {
+		a.log("ok", fmt.Sprintf("Encontré una descarga anterior interrumpida (%s ya bajados): continúo desde ahí, NO desde cero.", humanBytes(ps)))
+	}
 	phase := fmt.Sprintf("Descargando el laboratorio (%s)…", sizeLbl)
 	err = fetch.Download(entry, tarball, func(done, total int64) {
 		pct := -1.0

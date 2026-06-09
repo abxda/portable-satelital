@@ -125,41 +125,144 @@ func (e Entry) DownloadURL() string {
 // ProgressFn recibe (bytesDescargados, bytesTotales). total=0 si es desconocido.
 type ProgressFn func(done, total int64)
 
-// Download trae e a destPath con progreso. Verifica el SHA-256 al terminar y
-// BORRA el archivo si no coincide (nunca queda un artefacto no verificado).
-func Download(e Entry, destPath string, prog ProgressFn) error {
-	body, total, err := httpGetLen(e.DownloadURL())
-	if err != nil {
-		return err
+// PartialSize devuelve cuántos bytes hay de una descarga previa interrumpida
+// de ESTA misma entrada (0 si no hay, o si el parcial era de otra versión).
+// Sirve para que la UI avise "continúo desde X%".
+func PartialSize(e Entry, destPath string) int64 {
+	part := destPath + ".partial"
+	meta, err := os.ReadFile(part + ".meta")
+	if err != nil || !strings.EqualFold(strings.TrimSpace(string(meta)), e.SHA256) {
+		return 0
 	}
-	defer body.Close()
+	fi, err := os.Stat(part)
+	if err != nil {
+		return 0
+	}
+	return fi.Size()
+}
 
+// Download trae e a destPath con progreso, REANUDABLE y con reintentos:
+//
+//   - escribe a destPath+".partial" (+ un .meta con el sha esperado: un parcial
+//     de OTRA versión se descarta en vez de mezclarse);
+//   - si ya hay un parcial de esta misma entrada, continúa con HTTP Range
+//     (si el servidor no soporta Range, reinicia limpio);
+//   - ante un corte de red reintenta solo (hasta 8 veces con espera creciente;
+//     el contador se reinicia cada vez que SÍ hubo avance, para conexiones
+//     lentas pero vivas);
+//   - al completar verifica el SHA-256 del ARCHIVO COMPLETO y solo entonces lo
+//     renombra a destPath. Si no coincide, borra todo (nunca queda un artefacto
+//     no verificado).
+//
+// Cerrar el programa a media descarga NO pierde el avance: el .partial queda y
+// el siguiente intento continúa desde ahí.
+func Download(e Entry, destPath string, prog ProgressFn) error {
 	if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
 		return err
 	}
-	out, err := os.Create(destPath)
+	part := destPath + ".partial"
+	meta := part + ".meta"
+
+	// Parcial de otra versión/artefacto: fuera.
+	if m, err := os.ReadFile(meta); err != nil || !strings.EqualFold(strings.TrimSpace(string(m)), e.SHA256) {
+		os.Remove(part)
+	}
+	if err := os.WriteFile(meta, []byte(e.SHA256+"\n"), 0o644); err != nil {
+		return err
+	}
+
+	attempts := 0
+	var lastErr error
+	for attempts < 8 {
+		var before int64
+		if fi, err := os.Stat(part); err == nil {
+			before = fi.Size()
+		}
+		lastErr = downloadChunk(e, part, prog)
+		if lastErr == nil {
+			break
+		}
+		var after int64
+		if fi, err := os.Stat(part); err == nil {
+			after = fi.Size()
+		}
+		if after > before {
+			attempts = 0 // hubo avance: la conexión vive, sigue intentando
+		} else {
+			attempts++
+		}
+		wait := time.Duration(2<<uint(min(attempts, 4))) * time.Second
+		time.Sleep(wait)
+	}
+	if lastErr != nil {
+		// El .partial se CONSERVA: el próximo intento continúa desde aquí.
+		return fmt.Errorf("la descarga se interrumpió tras varios reintentos: %v (el avance quedó guardado; vuelve a pulsar Instalar para continuar donde se quedó)", lastErr)
+	}
+
+	// Verificación final sobre el archivo completo.
+	if err := VerifySHA256File(part, e.SHA256); err != nil {
+		os.Remove(part)
+		os.Remove(meta)
+		return fmt.Errorf("%v (descarga corrupta o alterada; el archivo fue eliminado, vuelve a intentar)", err)
+	}
+	os.Remove(meta)
+	os.Remove(destPath)
+	return os.Rename(part, destPath)
+}
+
+// downloadChunk baja (o continúa) e hacia part. Devuelve nil solo si el cuerpo
+// llegó completo.
+func downloadChunk(e Entry, part string, prog ProgressFn) error {
+	var start int64
+	if fi, err := os.Stat(part); err == nil {
+		start = fi.Size()
+	}
+
+	req, _ := http.NewRequest("GET", e.DownloadURL(), nil)
+	req.Header.Set("User-Agent", "satlab-launcher")
+	if start > 0 {
+		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", start))
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
-	h := sha256.New()
-	pw := &progWriter{total: total, prog: prog, last: time.Now()}
-	_, copyErr := io.Copy(io.MultiWriter(out, h, pw), body)
+	defer resp.Body.Close()
+
+	var out *os.File
+	var total int64
+	switch {
+	case start > 0 && resp.StatusCode == http.StatusPartialContent:
+		total = start + resp.ContentLength
+		out, err = os.OpenFile(part, os.O_WRONLY|os.O_APPEND, 0o644)
+	case resp.StatusCode == http.StatusOK:
+		start, total = 0, resp.ContentLength
+		out, err = os.Create(part) // el servidor no dio Range: reinicio limpio
+	case resp.StatusCode == http.StatusRequestedRangeNotSatisfiable:
+		// Parcial más grande que el remoto (basura): reinicia.
+		os.Remove(part)
+		return fmt.Errorf("rango inválido, parcial descartado")
+	default:
+		return fmt.Errorf("HTTP %d al pedir %s", resp.StatusCode, e.DownloadURL())
+	}
+	if err != nil {
+		return err
+	}
+
+	pw := &progWriter{done: start, total: total, prog: prog, last: time.Now()}
+	_, copyErr := io.Copy(io.MultiWriter(out, pw), resp.Body)
 	closeErr := out.Close()
 	if copyErr != nil {
-		os.Remove(destPath)
 		return copyErr
 	}
 	if closeErr != nil {
-		os.Remove(destPath)
 		return closeErr
+	}
+	if total > 0 && pw.done < total {
+		return fmt.Errorf("conexión cerrada a medias (%d de %d bytes)", pw.done, total)
 	}
 	if prog != nil {
 		prog(pw.done, total)
-	}
-	got := hex.EncodeToString(h.Sum(nil))
-	if !strings.EqualFold(got, e.SHA256) {
-		os.Remove(destPath)
-		return fmt.Errorf("SHA-256 no coincide: esperado %s, obtenido %s (descarga corrupta o alterada; el archivo fue eliminado)", e.SHA256, got)
 	}
 	return nil
 }

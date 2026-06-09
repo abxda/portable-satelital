@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Laboratorio Satelital Portable</title>
+<!-- OJO: NO incluir <script src="/wails/..."> a mano. Wails los INYECTA solo;
+     duplicarlos re-ejecuta el runtime, resetea window.go y el registro de
+     eventos, y la UI queda muerta (bug real de v0.1.1). -->
 <style>
   :root {
     --bg: #0e1726; --panel: #16223a; --panel2: #1c2b49;
@@ -15,67 +18,100 @@
   body {
     background: var(--bg); color: var(--text);
     font-family: "Segoe UI", system-ui, sans-serif; font-size: 14px;
-    display: flex; flex-direction: column; padding: 18px 22px; gap: 14px;
-    user-select: none; cursor: default;
+    display: flex; flex-direction: column; padding: 16px 20px 10px; gap: 12px;
+    user-select: none; cursor: default; overflow: hidden;
   }
-  header { display: flex; align-items: center; gap: 12px; }
+  header { display: flex; align-items: center; gap: 12px; flex: none; }
   .logo {
-    width: 44px; height: 44px; border-radius: 10px; flex: none;
+    width: 42px; height: 42px; border-radius: 10px; flex: none;
     background: linear-gradient(135deg, #0ea5e9, #6366f1);
-    display: flex; align-items: center; justify-content: center; font-size: 24px;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
   }
-  h1 { font-size: 18px; font-weight: 600; }
-  .sub { color: var(--dim); font-size: 12px; margin-top: 2px; }
-  .ver { margin-left: auto; color: var(--dim); font-size: 12px; text-align: right; }
+  h1 { font-size: 17px; font-weight: 600; }
+  .sub { color: var(--dim); font-size: 11.5px; margin-top: 2px; }
+  .ver { margin-left: auto; color: var(--dim); font-size: 11px; text-align: right; }
+
+  .tabs { display: flex; gap: 6px; flex: none; }
+  .tab {
+    padding: 7px 18px; border-radius: 9px 9px 0 0; cursor: pointer;
+    background: transparent; color: var(--dim); font-weight: 600; font-size: 13px;
+    border: 1px solid transparent; border-bottom: none;
+  }
+  .tab.active { background: var(--panel); color: var(--text); border-color: var(--line); }
+  .tabpage { display: none; flex-direction: column; gap: 12px; flex: 1; min-height: 0; }
+  .tabpage.active { display: flex; }
 
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
-  .grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13px; }
-  .grid .k { color: var(--dim); }
-  .grid .v { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .pill { display: inline-block; padding: 1px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-  .pill.ok { background: rgba(52,211,153,.15); color: var(--ok); }
-  .pill.no { background: rgba(251,191,36,.15); color: var(--warn); }
-  .pill.run { background: rgba(56,189,248,.18); color: var(--accent); }
 
-  .actions { display: flex; gap: 10px; align-items: center; }
-  button {
-    font: inherit; border: none; border-radius: 10px; padding: 12px 22px;
-    cursor: pointer; font-weight: 600; transition: filter .15s;
+  /* --- INICIO --- */
+  #bigstatus { text-align: center; padding: 22px 16px; }
+  #bigicon { font-size: 40px; }
+  #bigtitle { font-size: 20px; font-weight: 700; margin-top: 8px; }
+  #bigdesc { color: var(--dim); font-size: 13px; margin-top: 6px; line-height: 1.5; }
+  #mainBtn {
+    margin-top: 16px; font: inherit; border: none; border-radius: 12px;
+    padding: 15px 40px; cursor: pointer; font-weight: 700; font-size: 17px;
+    background: linear-gradient(135deg, var(--accent2), #6366f1); color: white;
   }
-  button:hover { filter: brightness(1.12); }
-  button:disabled { opacity: .45; cursor: default; }
-  .primary { background: linear-gradient(135deg, var(--accent2), #6366f1); color: white; font-size: 16px; }
-  .ghost { background: var(--panel2); color: var(--text); border: 1px solid var(--line); padding: 10px 16px; font-size: 13px; }
-  .danger { background: rgba(248,113,113,.15); color: var(--err); border: 1px solid rgba(248,113,113,.3); padding: 10px 16px; font-size: 13px; }
+  #mainBtn:hover { filter: brightness(1.12); }
+  #mainBtn:disabled { opacity: .45; cursor: default; }
+  .minor { margin-top: 12px; display: flex; gap: 10px; justify-content: center; }
+  .minor button {
+    font: inherit; font-size: 12.5px; padding: 8px 14px; border-radius: 9px; cursor: pointer;
+    background: var(--panel2); color: var(--text); border: 1px solid var(--line);
+  }
+  .minor button.danger { color: var(--err); border-color: rgba(248,113,113,.3); }
 
   #progressWrap { display: none; }
-  #phase { font-size: 13px; color: var(--text); margin-bottom: 7px; }
-  .bar { height: 10px; background: var(--panel2); border-radius: 999px; overflow: hidden; }
+  #phase { font-size: 13.5px; margin-bottom: 8px; }
+  #pct { float: right; font-weight: 700; color: var(--accent); }
+  .bar { height: 14px; background: var(--panel2); border-radius: 999px; overflow: hidden; }
   .bar > div {
     height: 100%; width: 0%; border-radius: 999px;
-    background: linear-gradient(90deg, var(--accent2), #818cf8);
-    transition: width .2s;
+    background: linear-gradient(90deg, var(--accent2), #818cf8); transition: width .25s;
   }
   .bar.indet > div { width: 30% !important; animation: slide 1.2s linear infinite; }
   @keyframes slide { from { margin-left: -30%; } to { margin-left: 100%; } }
-  #detail { font-size: 12px; color: var(--dim); margin-top: 6px; }
+  #detail { font-size: 12px; color: var(--dim); margin-top: 7px; }
 
-  #warn { display: none; border-color: rgba(251,191,36,.4); color: var(--warn); font-size: 13px; }
-  #update { display: none; border-color: rgba(56,189,248,.4); font-size: 13px; align-items: center; gap: 10px; }
-  #update button { padding: 6px 14px; font-size: 12px; }
+  .notice { display: none; font-size: 12.5px; line-height: 1.45; }
+  #warn { border-color: rgba(251,191,36,.4); color: var(--warn); }
+  #errbox { border-color: rgba(248,113,113,.45); color: var(--err); user-select: text; cursor: text; }
+  #update { border-color: rgba(56,189,248,.4); }
+  #update button { margin-left: 10px; font: inherit; font-size: 12px; padding: 5px 12px;
+    border-radius: 8px; cursor: pointer; background: var(--panel2); color: var(--text); border: 1px solid var(--line); }
 
-  #seclog { flex: 1; overflow-y: auto; font-size: 12.5px; min-height: 90px; }
-  #seclog h2 { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+  /* --- SOPORTE --- */
+  .srow { display: flex; gap: 8px; flex-wrap: wrap; flex: none; }
+  .srow button {
+    font: inherit; font-size: 12.5px; padding: 8px 13px; border-radius: 9px; cursor: pointer;
+    background: var(--panel2); color: var(--text); border: 1px solid var(--line);
+  }
+  .srow button:hover { filter: brightness(1.15); }
+  #sinfo { font-size: 12.5px; user-select: text; cursor: text; }
+  #sinfo .grid { display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; }
+  #sinfo .k { color: var(--dim); }
+  .console {
+    flex: 1; min-height: 0; overflow-y: auto; user-select: text; cursor: text;
+    font-family: Consolas, monospace; font-size: 12px; line-height: 1.55;
+    white-space: pre-wrap; word-break: break-all;
+  }
+  .console h2, #seclogcard h2 { font-size: 11px; color: var(--dim); text-transform: uppercase;
+    letter-spacing: .08em; margin-bottom: 6px; font-family: "Segoe UI", system-ui, sans-serif; }
+
+  /* bitácora de Inicio */
+  #seclogcard { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  #loglines { overflow-y: auto; flex: 1; user-select: text; cursor: text; font-size: 12.3px; }
   .logline { display: flex; gap: 8px; padding: 2px 0; color: var(--dim); }
-  .logline .ic { flex: none; width: 16px; text-align: center; }
+  .logline .ic { flex: none; width: 15px; text-align: center; }
   .logline.ok .ic { color: var(--ok); } .logline.ok { color: var(--text); }
   .logline.warn .ic, .logline.warn { color: var(--warn); }
   .logline.err .ic, .logline.err { color: var(--err); }
 
-  footer { display: flex; gap: 16px; align-items: center; color: var(--dim); font-size: 11.5px; }
-  footer .links { margin-left: auto; display: flex; gap: 14px; }
+  footer { display: flex; gap: 8px; align-items: center; color: var(--dim); font-size: 10.5px; flex: none; }
+  footer .links { margin-left: auto; display: flex; gap: 12px; }
   footer a { color: var(--accent); text-decoration: none; cursor: pointer; }
-  .shield { color: var(--ok); }
+  .copied { color: var(--ok) !important; }
 </style>
 </head>
 <body>
@@ -83,115 +119,187 @@
     <div class="logo">🛰️</div>
     <div>
       <h1>Laboratorio Satelital Portable</h1>
-      <div class="sub">Análisis de imágenes satelitales · JupyterLab + stack geoespacial · Dr. Abel Coronado</div>
+      <div class="sub">Curso de análisis de imágenes satelitales · Dr. Abel Coronado</div>
     </div>
     <div class="ver">launcher <span id="lver">–</span><br/><span id="stackver"></span></div>
   </header>
 
-  <div class="card" id="update">
-    <span>⬆️ Hay una versión nueva del launcher (<b id="updver"></b>).</span>
-    <button class="ghost" onclick="go().ApplyUpdate()">Actualizar ahora</button>
+  <div class="tabs">
+    <div class="tab active" id="tabInicio" onclick="showTab('inicio')">Inicio</div>
+    <div class="tab" id="tabSoporte" onclick="showTab('soporte')">🛠 Soporte</div>
   </div>
 
-  <div class="card" id="warn"></div>
+  <!-- ============ PESTAÑA INICIO ============ -->
+  <div class="tabpage active" id="pageinicio">
 
-  <div class="card">
-    <div class="grid">
-      <span class="k">Tu equipo</span><span class="v" id="os">–</span>
-      <span class="k">Carpeta del laboratorio</span><span class="v" id="root" title="">–</span>
-      <span class="k">Estado</span><span class="v" id="status">–</span>
+    <div class="card notice" id="update">
+      ⬆️ Hay una versión nueva de este programa (<b id="updver"></b>).
+      <button onclick="App().ApplyUpdate()">Actualizar ahora</button>
+    </div>
+    <div class="card notice" id="warn"></div>
+    <div class="card notice" id="errbox"></div>
+
+    <div class="card" id="bigstatus">
+      <div id="bigicon">⏳</div>
+      <div id="bigtitle">Cargando…</div>
+      <div id="bigdesc"></div>
+      <button id="mainBtn" onclick="mainAction()" disabled>…</button>
+      <div class="minor">
+        <button id="folderBtn" onclick="App().OpenFolder()" style="display:none">📂 Ver carpeta</button>
+        <button id="stopBtn" class="danger" onclick="App().StopLab()" style="display:none">⏹ Apagar laboratorio</button>
+      </div>
+    </div>
+
+    <div class="card" id="progressWrap">
+      <div id="phase">…<span id="pct"></span></div>
+      <div class="bar" id="bar"><div id="barFill"></div></div>
+      <div id="detail"></div>
+    </div>
+
+    <div class="card" id="seclogcard">
+      <h2>Actividad <a style="float:right;cursor:pointer;color:var(--accent)" id="copyLog1" onclick="copyText(logText(), 'copyLog1')">📋 copiar</a></h2>
+      <div id="loglines"></div>
     </div>
   </div>
 
-  <div class="card actions">
-    <button class="primary" id="mainBtn" onclick="mainAction()">…</button>
-    <button class="ghost" id="folderBtn" onclick="go().OpenFolder()" style="display:none">📂 Abrir carpeta</button>
-    <button class="danger" id="stopBtn" onclick="go().StopLab()" style="display:none">⏹ Detener</button>
-  </div>
+  <!-- ============ PESTAÑA SOPORTE ============ -->
+  <div class="tabpage" id="pagesoporte">
+    <div class="card" id="sinfo">
+      <div class="grid">
+        <span class="k">Programa</span><span id="s_ver">–</span>
+        <span class="k">Carpeta</span><span id="s_root">–</span>
+        <span class="k">Laboratorio</span><span id="s_lab">–</span>
+        <span class="k">Estado</span><span id="s_estado">–</span>
+        <span class="k">Llave del catálogo</span><span id="s_key">–</span>
+      </div>
+    </div>
+    <div class="srow">
+      <button id="bDiag" onclick="copyDiag()">📋 Copiar diagnóstico completo</button>
+      <button onclick="loadJlog()">🔄 Ver registro de Jupyter</button>
+      <button onclick="App().OpenFolder()">📂 Abrir carpeta del laboratorio</button>
+    </div>
+    <div class="card console" id="jlog">El diagnóstico completo incluye: datos del programa, la actividad de esta sesión y el registro de Jupyter.
 
-  <div class="card" id="progressWrap">
-    <div id="phase">…</div>
-    <div class="bar" id="bar"><div id="barFill"></div></div>
-    <div id="detail"></div>
-  </div>
-
-  <div class="card" id="seclog">
-    <h2>Bitácora de verificación</h2>
-    <div id="loglines"></div>
+Pulsa «Copiar diagnóstico completo» y pégalo en un correo para recibir soporte.</div>
   </div>
 
   <footer>
-    <span class="shield">🛡️</span>
-    <span>Descargas verificadas (SHA-256) · Catálogo firmado (Ed25519, llave <span id="fp">…</span>) · Jupyter solo local (127.0.0.1)</span>
+    <span style="color:var(--ok)">🛡️</span>
+    <span>Descargas verificadas (SHA-256) · Catálogo firmado (Ed25519) · Jupyter solo en este equipo (127.0.0.1)</span>
     <div class="links">
       <a onclick="openURL('https://github.com/abxda/portable-satelital')">Código fuente</a>
-      <a onclick="openURL('https://github.com/abxda/portable-satelital/blob/main/VERIFICACION.md')">Cómo verificar este software</a>
+      <a onclick="openURL('https://github.com/abxda/portable-satelital/blob/main/VERIFICACION.md')">Verificación</a>
     </div>
   </footer>
 
-<script src="/wails/ipc.js"></script>
-<script src="/wails/runtime.js"></script>
 <script>
+  "use strict";
   let st = null;
+  let logBuf = [];
 
-  function go() { return window.go.main.App; }
+  function App() { return window.go.main.App; }
   function openURL(u) { window.runtime.BrowserOpenURL(u); }
   function $(id) { return document.getElementById(id); }
 
+  // Errores de JS NUNCA silenciosos: se pintan en pantalla (lección v0.1.1).
+  window.onerror = function (msg, src, line) {
+    try {
+      const e = $("errbox");
+      e.style.display = "block";
+      e.textContent = "⚠ Error interno de la interfaz: " + msg + " (línea " + line + "). " +
+        "Cierra y vuelve a abrir el programa; si persiste, copia este mensaje a soporte.";
+    } catch (_) {}
+  };
+
+  function showTab(name) {
+    for (const t of ["inicio", "soporte"]) {
+      $("page" + t).classList.toggle("active", t === name);
+      $("tab" + (t === "inicio" ? "Inicio" : "Soporte")).classList.toggle("active", t === name);
+    }
+    if (name === "soporte") renderSupport();
+  }
+
   function addLog(level, msg) {
+    logBuf.push("[" + (level || "info") + "] " + msg);
     const d = document.createElement("div");
     d.className = "logline " + (level || "info");
     const ic = level === "ok" ? "✓" : level === "warn" ? "⚠" : level === "err" ? "✗" : "·";
     d.innerHTML = '<span class="ic">' + ic + '</span><span></span>';
     d.lastChild.textContent = msg;
     $("loglines").appendChild(d);
-    $("seclog").scrollTop = $("seclog").scrollHeight;
+    $("loglines").scrollTop = $("loglines").scrollHeight;
+  }
+  function logText() { return logBuf.join("\n"); }
+
+  function copyText(text, btnId) {
+    window.runtime.ClipboardSetText(text).then(() => {
+      const b = $(btnId);
+      if (!b) return;
+      const old = b.textContent;
+      b.textContent = "✓ copiado";
+      b.classList.add("copied");
+      setTimeout(() => { b.textContent = old; b.classList.remove("copied"); }, 1600);
+    });
+  }
+  async function copyDiag() {
+    const txt = await App().SupportBundle();
+    copyText(txt, "bDiag");
+  }
+  async function loadJlog() {
+    $("jlog").textContent = await App().ReadJupyterLog();
   }
 
   function showProgress(phase, pct, detail) {
     $("progressWrap").style.display = "block";
-    $("phase").textContent = phase;
+    $("phase").childNodes[0].textContent = phase;
     $("detail").textContent = detail || "";
     if (pct == null || pct < 0) {
       $("bar").classList.add("indet");
+      $("pct").textContent = "";
       $("barFill").style.width = "30%";
     } else {
       $("bar").classList.remove("indet");
+      $("pct").textContent = pct.toFixed(1) + " %";
       $("barFill").style.width = pct.toFixed(1) + "%";
     }
   }
   function hideProgress() { $("progressWrap").style.display = "none"; }
 
+  function setBig(icon, title, desc, btnText, btnEnabled) {
+    $("bigicon").textContent = icon;
+    $("bigtitle").textContent = title;
+    $("bigdesc").innerHTML = desc;
+    $("mainBtn").textContent = btnText;
+    $("mainBtn").disabled = !btnEnabled;
+  }
+
   function render() {
     if (!st) return;
     $("lver").textContent = "v" + st.launcherVersion;
-    $("os").textContent = st.osLabel;
-    $("root").textContent = st.root;
-    $("root").title = st.root;
-    $("fp").textContent = st.keyFingerprint;
     $("stackver").textContent = st.installedVersion ? "laboratorio " + st.installedVersion : "";
-
-    const btn = $("mainBtn");
     $("folderBtn").style.display = st.installed ? "" : "none";
     $("stopBtn").style.display = st.running ? "" : "none";
 
     if (st.installing) {
-      $("status").innerHTML = '<span class="pill no">instalando…</span>';
-      btn.textContent = "Instalando…";
-      btn.disabled = true;
+      setBig("⬇️", "Instalando tu laboratorio…",
+        "Puedes ver el avance abajo. Si la descarga se corta, no te preocupes: " +
+        "al volver a intentar <b>continúa donde se quedó</b>, no desde cero.",
+        "Instalando…", false);
     } else if (st.running) {
-      $("status").innerHTML = '<span class="pill run">● ejecutándose</span> &nbsp;<span style="color:var(--dim)">' + st.labUrl + "</span>";
-      btn.textContent = "🌐 Abrir en el navegador";
-      btn.disabled = false;
+      setBig("🟢", "Tu laboratorio está abierto",
+        "Trabaja en la pestaña del navegador que se abrió.<br/>Cuando termines, cierra esta ventana: el laboratorio se apaga solo.",
+        "🌐 Volver a abrir en el navegador", true);
+      hideProgress();
     } else if (st.installed) {
-      $("status").innerHTML = '<span class="pill ok">✓ instalado</span>';
-      btn.textContent = "🚀 Abrir laboratorio";
-      btn.disabled = false;
+      setBig("✅", "Tu laboratorio está listo",
+        "Pulsa el botón y se abrirá JupyterLab en tu navegador.<br/>Todo funciona en tu equipo, sin internet y sin enviar datos a ningún lado.",
+        "🚀 Abrir laboratorio", true);
       hideProgress();
     } else {
-      $("status").innerHTML = '<span class="pill no">no instalado</span>';
-      btn.textContent = "⬇️ Instalar laboratorio";
-      btn.disabled = false;
+      setBig("📦", "Falta instalar tu laboratorio (una sola vez)",
+        "Se descargará el paquete (" + "~335 MB" + ") con todo lo necesario.<br/>" +
+        "<b>La descarga solo inicia cuando tú pulses el botón</b> y verás el porcentaje de avance.",
+        "⬇️ Instalar laboratorio", true);
     }
 
     const w = $("warn");
@@ -201,33 +309,67 @@
     } else {
       w.style.display = "none";
     }
+    renderSupport();
+  }
+
+  function renderSupport() {
+    if (!st) return;
+    $("s_ver").textContent = "SatLab v" + st.launcherVersion + " · " + st.osLabel;
+    $("s_root").textContent = st.root;
+    $("s_lab").textContent = st.installed
+      ? (st.installedVersion || "instalado") + "  (sha " + (st.installedSha || "").substring(0, 16) + "…)"
+      : "no instalado";
+    $("s_estado").textContent = st.running ? "ejecutándose en " + st.labUrl : "detenido";
+    $("s_key").textContent = st.keyFingerprint;
   }
 
   async function refresh() {
-    st = await go().GetState();
+    st = await App().GetState();
     render();
   }
 
   function mainAction() {
     if (!st) return;
+    $("errbox").style.display = "none";
     if (st.running) { openURL(st.labUrl); return; }
-    if (st.installed) { showProgress("Arrancando JupyterLab…", -1, "La primera vez puede tardar un poco más."); go().OpenLab(); return; }
-    addLog("info", "Iniciando instalación…");
-    go().Install();
+    if (st.installed) {
+      showProgress("Arrancando JupyterLab…", -1, "La primera vez puede tardar un poco más de lo normal.");
+      App().OpenLab();
+      return;
+    }
+    App().Install();
   }
 
-  window.runtime.EventsOn("satlab", (e) => {
-    if (!e) return;
-    if (e.kind === "log") { addLog(e.level, e.msg); }
-    else if (e.kind === "progress") { showProgress(e.phase, e.pct, e.detail); }
-    else if (e.kind === "state") { hideProgressIfIdle(); refresh(); }
-    else if (e.kind === "error") { addLog("err", e.msg); hideProgress(); refresh(); }
-    else if (e.kind === "update") { $("update").style.display = "flex"; $("updver").textContent = "v" + e.msg; }
-  });
-  function hideProgressIfIdle() { /* render() decide; instalación terminada la oculta */ }
-
-  addLog("info", "Programa iniciado. Fuente y guía de verificación en github.com/abxda/portable-satelital");
-  refresh();
+  // --- arranque DEFENSIVO: espera a que Wails esté listo; si algo truena, se ve.
+  function boot() {
+    if (!window.go || !window.go.main || !window.runtime) {
+      setTimeout(boot, 50);
+      return;
+    }
+    window.runtime.EventsOn("satlab", (e) => {
+      if (!e) return;
+      if (e.kind === "log") { addLog(e.level, e.msg); }
+      else if (e.kind === "progress") { showProgress(e.phase, e.pct, e.detail); }
+      else if (e.kind === "state") { refresh(); }
+      else if (e.kind === "error") {
+        addLog("err", e.msg);
+        const b = $("errbox");
+        b.style.display = "block";
+        b.textContent = "✗ " + e.msg;
+        hideProgress();
+        refresh();
+      }
+      else if (e.kind === "update") { $("update").style.display = "block"; $("updver").textContent = "v" + e.msg; }
+    });
+    App().GetLogHistory().then(hist => {
+      for (const l of hist || []) {
+        const m = l.match(/\[(ok|info|warn|err)\]\s(.*)$/);
+        if (m) addLog(m[1], m[2]);
+      }
+    });
+    refresh().then(() => App().UiReady());
+  }
+  boot();
 </script>
 </body>
 </html>
