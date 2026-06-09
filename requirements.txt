@@ -1,0 +1,14 @@
+jupyterlab
+numpy<2
+scipy
+numba
+scikit-learn
+pandas
+# pyshepseg NO esta en PyPI (verificado 2026-06-09): se instala del release
+# oficial de ubarsc en GitHub (Python puro; el sdist instala sin compilar).
+pyshepseg @ https://github.com/ubarsc/pyshepseg/releases/download/pyshepseg-2.0.5/pyshepseg-2.0.5.tar.gz
+rasterio
+geopandas
+exactextract
+matplotlib
+pyyaml

@@ -1,0 +1,32 @@
+# === Credenciales — NUNCA commitear ===
+credentials/.hf_token
+credentials/.github_token
+*.token
+.hf_token
+.github_token
+*.pem
+id_ed25519
+id_rsa
+# llave PRIVADA de firma del manifest (la publica viaja embebida en el exe)
+satlab_ed25519.key
+credentials/satlab_ed25519.key
+
+# === Entornos / build ===
+.venv/
+venv/
+__pycache__/
+*.pyc
+dist/
+*.exe
+sat-launcher
+meta-launcher
+# binarios compilados de Wails (los assets de build/ SI se versionan: el CI los usa)
+satlab-launcher/build/bin/
+# bindings JS autogenerados por wails
+satlab-launcher/frontend/wailsjs/
+
+# === Portables / artefactos pesados (no van a git; van a HF/LFS) ===
+*.tar.gz
+*.tgz
+python/
+notebooks/data/
