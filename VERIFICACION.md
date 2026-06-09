@@ -69,11 +69,33 @@ Verificación manual:
 Get-FileHash SatLab.exe -Algorithm SHA256   # comparar contra SHA256SUMS.txt del release
 ```
 
-## 4) Análisis antivirus independiente
+## 4) Análisis antivirus independiente — y los falsos positivos esperables
 
-Cada release se somete a [VirusTotal](https://www.virustotal.com) antes de publicarse y el
-enlace al reporte se incluye en las notas del release. Puede re-subirlo usted mismo: el
-hash SHA-256 del archivo debe coincidir con el del reporte.
+Cada release se somete a [VirusTotal](https://www.virustotal.com) y el enlace se incluye en
+las notas del release. Puede re-subirlo usted mismo: el SHA-256 debe coincidir.
+
+**Qué esperar del reporte (transparencia total):** los motores tradicionales de firmas
+(Kaspersky, ESET, Sophos, Symantec, BitDefender, TrendMicro, McAfee, Elastic, etc.) marcan
+el binario **limpio**. Un puñado de motores puramente *heurísticos/ML* puede marcarlo como
+sospechoso con etiquetas genéricas (p. ej. `Trojan:Win32/Wacatac.B!ml` de Microsoft — la
+terminación `!ml` indica veredicto de *machine learning*, no firma de malware conocida).
+Es el falso positivo documentado y clásico para **ejecutables Go sin firma Authenticode**:
+binario nuevo sin reputación + símbolos de depuración eliminados. Cómo desmentirlo con
+evidencia verificable, en orden de fuerza:
+
+1. La **attestation** (§2): prueba criptográfica de que el exe salió del código fuente
+   público, compilado en GitHub — un troyano no puede producirla.
+2. El **código fuente completo** está publicado; la lógica de red es auditable: las únicas
+   conexiones propias son a `huggingface.co` (catálogo/descarga) y `github.com`
+   (auto-actualización). Los dominios de Microsoft/Akamai/DigiCert que aparecen en
+   sandboxes provienen de WebView2 y del propio Windows (revocación de certificados,
+   recursos de idioma), no de este programa.
+3. Reportamos cada release como **falso positivo a Microsoft** (WDSI) y a los demás
+   proveedores; estos veredictos ML suelen limpiarse en días.
+
+Si su política institucional exige cero alertas heurísticas, la alternativa es esperar la
+versión con firma Authenticode (en evaluación) o autorizar el hash específico del release
+(allowlisting por SHA-256), que es criptográficamente más fuerte que la reputación.
 
 ## 5) Resumen de la postura de seguridad
 
