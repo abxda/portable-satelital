@@ -36,3 +36,5 @@ notebooks/data/
 
 # staging del build de jupyterlite
 wasm/_contents/
+
+.jupyterlite.doit.db
