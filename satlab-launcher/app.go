@@ -21,7 +21,7 @@ import (
 
 // AppVersion se compara contra el descriptor de self-update publicado en HF.
 // Súbela en cada release (y publica el descriptor con la MISMA versión).
-const AppVersion = "0.1.2"
+const AppVersion = "0.1.3"
 
 // App es el backend que la UI (frontend/dist) invoca vía bindings de Wails.
 type App struct {
