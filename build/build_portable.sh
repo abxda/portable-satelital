@@ -104,14 +104,12 @@ fi
 echo "==> [5/6] PRUEBA DE RELOCALIZACIÓN (lo que más falla)"
 TMP="$(mktemp -d)/relocado"
 cp -a "$OUT" "$TMP"
-# Mismo entorno que exporta el launcher SatLab: PROJ_LIB (nombre LEGADO que
-# libproj sigue consultando) Y PROJ_DATA al proj.db de las wheels. Sin esto,
-# en un host con PROJ viejo el motor cae a /usr/share/proj y truena con
-# "proj.db VERSION.MINOR = 4 ... >= 6 expected".
-SITE="$(ls -d "$TMP"/python/lib/python3.*/site-packages | head -1)"
-export PROJ_DATA="$SITE/pyproj/proj_dir/share/proj"
-export PROJ_LIB="$PROJ_DATA"
-export GDAL_DATA="$SITE/rasterio/gdal_data"
+# Misma política que el launcher SatLab: LIMPIAR las variables PROJ/GDAL del
+# host. Cada wheel (rasterio, pyproj, pyogrio) trae su PROJ/GDAL con su data
+# emparejada y se autoconfigura cuando estas vars NO existen. Heredarlas
+# (QGIS/PROJ del sistema) O forzarlas cruzadas (proj.db de pyproj con la
+# libproj de rasterio) truena con "DATABASE.LAYOUT.VERSION.MINOR ...".
+unset PROJ_LIB PROJ_DATA GDAL_DATA GDAL_DRIVER_PATH PROJ_AUX_DB
 "$TMP/python/bin/python3" -m jupyterlab --version
 "$TMP/python/bin/python3" -m pip --version    # %pip de los alumnos debe funcionar movido
 "$TMP/python/bin/python3" - <<'PYTEST'

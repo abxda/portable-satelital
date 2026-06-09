@@ -21,7 +21,7 @@ import (
 
 // AppVersion se compara contra el descriptor de self-update publicado en HF.
 // Súbela en cada release (y publica el descriptor con la MISMA versión).
-const AppVersion = "0.1.5"
+const AppVersion = "0.1.6"
 
 // App es el backend que la UI (frontend/dist) invoca vía bindings de Wails.
 type App struct {
@@ -106,17 +106,6 @@ func pyBinDirs(pyDir string) []string {
 		return []string{pyDir, filepath.Join(pyDir, "Scripts")}
 	}
 	return []string{filepath.Join(pyDir, "bin")}
-}
-
-func sitePackages(pyDir string) string {
-	if runtime.GOOS == "windows" {
-		return filepath.Join(pyDir, "Lib", "site-packages")
-	}
-	matches, _ := filepath.Glob(filepath.Join(pyDir, "lib", "python3.*", "site-packages"))
-	if len(matches) > 0 {
-		return matches[0]
-	}
-	return filepath.Join(pyDir, "lib", "python3.11", "site-packages")
 }
 
 func osLabel() string {
@@ -404,43 +393,13 @@ func (a *App) startJupyter() error {
 	notebooks := filepath.Join(rt, "notebooks")
 	_ = os.MkdirAll(notebooks, 0o755)
 	cfgDir := filepath.Join(rt, "jupyter-config")
-	dataDir := filepath.Join(rt, "jupyter-data")
 
 	cmd := exec.Command(py, "-m", "jupyterlab",
 		fmt.Sprintf("--port=%d", port), "--no-browser",
 		"--config="+filepath.Join(cfgDir, "jupyter_server_config.py"))
 	cmd.Dir = notebooks // root_dir de Jupyter = carpeta de cuadernos
 
-	env := os.Environ()
-	pyDir := filepath.Join(rt, "python")
-	// PATH con los bin del python embebido al frente: así `!pip`, `!python` y
-	// los entry-points instalados por los alumnos (%pip install …) funcionan
-	// dentro de los notebooks. (Windows: python\ y python\Scripts\; Unix: bin/.)
-	pathPrefix := strings.Join(pyBinDirs(pyDir), string(os.PathListSeparator))
-	env = append(env,
-		"PATH="+pathPrefix+string(os.PathListSeparator)+os.Getenv("PATH"),
-		"JUPYTER_CONFIG_DIR="+cfgDir,
-		"JUPYTER_DATA_DIR="+dataDir,
-		"JUPYTER_RUNTIME_DIR="+filepath.Join(dataDir, "runtime"),
-		"PYTHONIOENCODING=utf-8",
-	)
-	// GDAL/PROJ explícitos. CRÍTICO en Linux: libproj consulta PROJ_LIB (nombre
-	// LEGADO) además de PROJ_DATA (moderno); si PROJ_LIB queda sin definir y el
-	// alumno tiene un PROJ viejo del sistema, libproj cae a /usr/share/proj y
-	// truena con "proj.db VERSION.MINOR = 4 ... >= 6 expected" (reporte del
-	// agente Linux, 2026-06-09). Exportamos AMBAS al proj.db de las wheels.
-	sitePk := sitePackages(pyDir)
-	projDir := filepath.Join(sitePk, "pyproj", "proj_dir", "share", "proj")
-	if !isDir(projDir) {
-		projDir = filepath.Join(sitePk, "rasterio", "proj_data") // fallback: el de rasterio
-	}
-	if isDir(projDir) {
-		env = append(env, "PROJ_DATA="+projDir, "PROJ_LIB="+projDir)
-	}
-	if p := filepath.Join(sitePk, "rasterio", "gdal_data"); isDir(p) {
-		env = append(env, "GDAL_DATA="+p)
-	}
-	cmd.Env = env
+	cmd.Env = buildLabEnv(rt)
 
 	// La salida de Jupyter queda en un log junto al laboratorio (diagnóstico).
 	logf, err := os.OpenFile(filepath.Join(rt, "jupyter.log"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
@@ -501,6 +460,48 @@ func (a *App) startJupyter() error {
 	return nil
 }
 
+// buildLabEnv construye el entorno del proceso de Jupyter (y sus kernels).
+//
+// Política PROJ/GDAL — aprendida a golpes (2026-06-09, dos bugs simétricos):
+// rasterio, pyproj y pyogrio traen CADA UNO su propio PROJ/GDAL con su data
+// EMPAREJADA, y se autoconfiguran solos cuando PROJ_LIB/PROJ_DATA/GDAL_DATA
+// NO existen en el entorno. Las dos formas de romperlo:
+//   1. HEREDAR las del host (QGIS / PROJ del sistema): rasterio respeta la
+//      variable y lee un proj.db viejo -> "LAYOUT.VERSION.MINOR = 4 ... >= 6".
+//   2. FORZARLAS nosotros al proj.db de pyproj (el "fix" de v0.1.5): la
+//      libproj de rasterio (otra versión) lee la base de pyproj -> el MISMO
+//      error con los papeles invertidos.
+// Conclusión: el launcher LIMPIA esas variables del entorno heredado y NO
+// define ninguna. Cada wheel usa su propia data, como en un equipo limpio.
+func buildLabEnv(rt string) []string {
+	drop := map[string]bool{
+		"PROJ_LIB": true, "PROJ_DATA": true, "GDAL_DATA": true,
+		"GDAL_DRIVER_PATH": true, "PROJ_AUX_DB": true,
+	}
+	var env []string
+	for _, kv := range os.Environ() {
+		if i := strings.IndexByte(kv, '='); i > 0 && drop[strings.ToUpper(kv[:i])] {
+			continue
+		}
+		env = append(env, kv)
+	}
+	pyDir := filepath.Join(rt, "python")
+	cfgDir := filepath.Join(rt, "jupyter-config")
+	dataDir := filepath.Join(rt, "jupyter-data")
+	// PATH con los bin del python embebido al frente: así `!pip`, `!python` y
+	// los entry-points instalados por los alumnos (%pip install …) funcionan
+	// dentro de los notebooks. (Windows: python\ y python\Scripts\; Unix: bin/.)
+	pathPrefix := strings.Join(pyBinDirs(pyDir), string(os.PathListSeparator))
+	env = append(env,
+		"PATH="+pathPrefix+string(os.PathListSeparator)+os.Getenv("PATH"),
+		"JUPYTER_CONFIG_DIR="+cfgDir,
+		"JUPYTER_DATA_DIR="+dataDir,
+		"JUPYTER_RUNTIME_DIR="+filepath.Join(dataDir, "runtime"),
+		"PYTHONIOENCODING=utf-8",
+	)
+	return env
+}
+
 // StopLab detiene Jupyter y sus kernels (árbol completo de procesos).
 func (a *App) StopLab() {
 	a.mu.Lock()
@@ -533,11 +534,6 @@ func freePort(from, to int) (int, error) {
 		}
 	}
 	return 0, fmt.Errorf("no encontré un puerto libre entre %d y %d", from, to)
-}
-
-func isDir(p string) bool {
-	fi, err := os.Stat(p)
-	return err == nil && fi.IsDir()
 }
 
 func humanBytes(n int64) string {

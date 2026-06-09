@@ -13,9 +13,22 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
+
+// newLabPython arma un comando python con el MISMO entorno que recibe Jupyter
+// (buildLabEnv): la pieza clave para que --headless-envcheck pruebe lo mismo
+// que vivirá el alumno.
+func newLabPython(py string, args ...string) *exec.Cmd {
+	cmd := exec.Command(py, args...)
+	cmd.Dir = root()
+	cmd.Env = buildLabEnv(root())
+	hideWindow(cmd)
+	return cmd
+}
 
 func runHeadless(mode string) int {
 	a := NewApp()
@@ -37,6 +50,25 @@ func runHeadless(mode string) int {
 			return 1
 		}
 		logf("INSTALL OK")
+	case "--headless-envcheck":
+		// Regresión del bug PROJ/GDAL: corre el chequeo geoespacial con el
+		// MISMO entorno que el launcher le da a Jupyter. Debe pasar aunque el
+		// entorno padre venga envenenado (PROJ_LIB=/usr/share/proj, etc.).
+		py := pythonExe()
+		if _, err := os.Stat(py); err != nil {
+			logf("ENVCHECK FAIL: laboratorio no instalado")
+			return 1
+		}
+		check := "import rasterio, pyproj; from rasterio.crs import CRS; " +
+			"CRS.from_epsg(6372); pyproj.CRS('EPSG:6372'); print('GEO ENV OK')"
+		cmd := newLabPython(py, "-c", check)
+		out, err := cmd.CombinedOutput()
+		logf("envcheck: %s", strings.TrimSpace(string(out)))
+		if err != nil || !strings.Contains(string(out), "GEO ENV OK") {
+			logf("ENVCHECK FAIL: %v", err)
+			return 1
+		}
+		logf("ENVCHECK OK")
 	case "--headless-smoke":
 		if _, err := os.Stat(pythonExe()); err != nil {
 			if err := a.doInstall(); err != nil {
