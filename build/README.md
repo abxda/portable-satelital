@@ -1,83 +1,79 @@
 # build/ — construir los Python portables + modelo de agentes remotos
 
 ## Qué hay aquí
-- **`build_portable.sh`** — Linux / macOS (corre en el SO destino)
-- **`build_portable.ps1`** — Windows x64
+- **`build_portable.ps1`** — Windows x64 (receta canónica)
+- **`build_portable.sh`** — Linux / macOS (espejo; corre EN el SO destino)
 
-Cada script: baja **python-build-standalone**, instala el `../requirements.txt` **dentro** del portable
-(sin venv), escribe la config de **Jupyter sin token** (bind 127.0.0.1), corre la **prueba de
-relocalización**, y empaqueta el tarball + `sha256`.
+Cada script: baja **python-build-standalone** y lo **verifica contra el SHA256SUMS oficial**,
+instala `../requirements.lock` **dentro** del portable con `--require-hashes` (sin venv),
+escribe la config de **Jupyter sin token** (bind 127.0.0.1), copia `../notebooks/`, corre la
+**prueba de relocalización** (imports + GeoTIFF real + **pip funcional**: los alumnos usan
+`%pip install` en clase), y empaqueta el tarball + `sha256`.
 
 ```bash
 # Linux / macOS  (corre EN esa máquina)
 chmod +x build/build_portable.sh
-./build/build_portable.sh portable ./requirements.txt
+./build/build_portable.sh
 
 # Windows  (corre EN Windows)
-powershell -ExecutionPolicy Bypass -File build\build_portable.ps1 portable .\requirements.txt
+powershell -ExecutionPolicy Bypass -File build\build_portable.ps1
 ```
 
-> Antes del tarball final, agrega a `portable/`: el binario **`sat-launcher`** (compilado aparte, ver
-> README §5) y la carpeta **`notebooks/`** (tutorial + datos). Luego re-empaca.
+> **El tarball NO lleva launcher.** La arquitectura (decisión 2026-06-09) es **UN solo
+> launcher visual** (`satlab-launcher/` → SatLab por plataforma) que descarga este tarball
+> desde el catálogo firmado y lanza Jupyter. El tarball solo trae `python/`,
+> `jupyter-config/` y `notebooks/` en la raíz del tar.
 
 ---
 
 ## ⚠️ Regla dura: el PYTHON portable se construye EN cada SO/arch (no se cross-buildea)
-`pip` baja **wheels binarias específicas de la plataforma** (el GDAL de rasterio, el LLVM de numba). **NO**
-puedes hornear el **python portable** de Mac desde Windows ni al revés. **Cada tarball se construye en su plataforma.**
+`pip` baja **wheels binarias específicas de la plataforma** (el GDAL de rasterio, el LLVM de
+numba). Cada tarball se construye en su plataforma. El **launcher** (Go/Wails) sí se compila
+por plataforma en CI o en la máquina del agente correspondiente (en macOS/Linux Wails
+requiere su toolchain nativo).
 
-> *Esto aplica SOLO al python portable.* Los **binarios Go** (meta-launcher y sat-launcher) son **Go puro
-> (CGO=0)** y **SÍ se cross-compilan desde una sola máquina** con `GOOS=… GOARCH=… go build`. En esta
-> máquina (Windows, Go 1.26.2) generas los binarios Go de los 3 SO. Ver README principal, sección
-> «Entorno YA disponible en esta máquina».
+### Nota del lock multiplataforma
+`requirements.lock` se generó en **Windows**. pip ignora los pines que no aplican a tu
+plataforma, pero si `--require-hashes` falla por una wheel sin hash registrado para tu SO,
+**re-genera el lock localmente** (instrucciones dentro del .sh) y repórtalo al líder para
+que quede auditado en el repo (`requirements-linux.lock`, etc.).
 
 ---
 
-## 🧭 TÚ eres el LÍDER de agentes remotos
+## 🧭 Modelo líder / agentes remotos
 
-Este es el modelo de trabajo (el mismo que usó el Big Data lab y que funcionó):
-
-- **Tú (el agente que recibe PortableSatelital) eres el LÍDER / orquestador.** Probablemente solo tengas
-  acceso a UN sistema operativo. **No construyes los 3 tú mismo.**
-- **Despachas una COPIA de estas instrucciones** (al menos `build/` + `requirements.txt` + el README) a un
-  **agente remoto** en cada SO objetivo (Windows, Linux, macOS Apple Silicon).
-- **Cada agente remoto** corre el `build_portable.*` de su SO → obtiene su `portable-satelital-<os>-<arch>.tar.gz`
-  + su `sha256` → y **te reporta el sha** (o publica él mismo el tarball a HF y te reporta el `oid` LFS).
-- **TÚ (líder) eres dueño del `manifest.txt`:** registras el sha de cada plataforma (**aditivo,
-  anti-clobber**), publicas los launchers + descriptores, y **verificas end-to-end** en cada SO. *(Disciplina
-  del Big Data: los agentes publican artefactos + reportan sha; el LÍDER edita el manifest.)*
+- **El líder** (quien tiene este repo + las credenciales) es dueño del **manifest firmado**:
+  registra los sha (aditivo, **anti-clobber**), **re-firma** (`cmd/satlab-sign`) y verifica
+  end-to-end. La llave privada `credentials/satlab_ed25519.key` NUNCA sale de su máquina.
+- **Cada agente remoto** (Linux x64, macOS arm64) recibe una copia del repo, corre el
+  `build_portable.sh` de su SO y **reporta**: sha256 del tarball, versión de Python y la
+  salida de la prueba de relocalización. Si publica él mismo a HF, reporta también el `oid` LFS.
 
 ### Plantilla de prompt para un agente remoto
 ```
-PARA: Agente <SO> (Windows / Linux / macOS arm64). [con git+HF si va a publicar él]
-OBJETIVO: construir el Python portable de PortableSatelital para <SO>/<arch> y reportar el sha256.
+PARA: Agente <SO> (Linux x64 / macOS arm64).
+OBJETIVO: construir el Python portable de PortableSatelital para tu SO/arch.
 PASOS:
-  1. Recibe la carpeta PortableSatelital (al menos build/ + requirements.txt + README).
-  2. Corre el build de tu SO:
-       Linux/macOS:  ./build/build_portable.sh portable ./requirements.txt
-       Windows:      powershell -ExecutionPolicy Bypass -File build\build_portable.ps1 portable .\requirements.txt
-  3. Compila el sat-launcher (Go) para tu SO/arch, cópialo a portable/ + agrega notebooks/, RE-EMPACA.
-  4. Verifica: el tarball se extrae en OTRA ruta y abre JupyterLab SIN token (localhost:8888/lab directo).
-  5. (si publicas tú)  hf upload del tarball; REPORTA sha256 + oid LFS.
-     (si no)            envíame el tarball + sha256 y yo lo publico.
-CONSTRAINTS: nunca imprimas/commitees tokens; usa ruta SIN espacios; chmod +x en Unix; macOS firma ad-hoc
-             y quita com.apple.quarantine. Pesado en disco externo si hace falta.
-REPORTA: sha256 del tarball, versión de Python, y la salida de la PRUEBA DE RELOCALIZACIÓN.
+  1. Clona github.com/abxda/portable-satelital (o recibe la carpeta).
+  2. ./build/build_portable.sh        # verifica, instala con hashes, prueba, empaca
+  3. (macOS) firma ad-hoc + quita com.apple.quarantine (el script ya lo intenta).
+  4. Verifica: extrae el tarball en OTRA ruta y corre
+     python/bin/python3 -m jupyterlab --version  y  -m pip --version.
+  5. REPORTA: sha256 del tarball, versión de Python, salida de la prueba de
+     relocalización. NO edites el manifest: eso lo hace el líder (firma Ed25519).
+CONSTRAINTS: nunca imprimas/commitees tokens; ruta SIN espacios; chmod +x en Unix.
 ```
 
----
-
-## "Otros escenarios" (cuando haga falta compilar más)
-Estas instrucciones son **copiables y parametrizables**. Cuando necesites un binario/tarball nuevo, adaptas
-y **re-despachas** al agente remoto del SO correspondiente:
+### El ritual del manifest (lo hace SOLO el líder)
+1. Sube el tarball a HF (`hf upload …`) y verifica `oid` LFS == sha256 local.
+2. Baja el `manifest.txt` actual, agrega/edita **solo** las claves de esa plataforma
+   (`<os>-<arch>-portable.{file,sha256,version,size}`), diff mínimo.
+3. **Re-firma**: `go run ./cmd/satlab-sign credentials/satlab_ed25519.key manifest.txt`
+4. Sube `manifest.txt` y `manifest.txt.sig`, re-baja ambos y confirma que COINCIDEN.
 
 | Escenario nuevo | Qué tocas |
 |---|---|
-| Otra **arquitectura** (linux-arm64, macos-x86_64) | ya contemplado en `build_portable.sh` (detecta el triple); despacha al agente de esa arch |
-| Otra **versión de Python** | `PY_VERSION` / `PBS_TAG` en los scripts |
-| **Bibliotecas extra** o distinta versión | edita `requirements.txt` (respeta `numpy<2`) y re-despacha |
-| **Otro tipo de proyecto** (no satelital) | mismo molde: otro `requirements.txt` + otros `notebooks/` |
-| Nuevo **SO** | añade su rama de detección + su agente remoto |
-
-> La idea de fondo: el **líder no necesita todas las máquinas**, necesita el **protocolo**. Mandas una copia
-> de `build/` + el contexto, recibes el `sha`, registras en el manifest y verificas. Escala sin saturarte.
+| Otra arquitectura | `build_portable.sh` ya detecta el triple; despacha al agente de esa arch |
+| Otra versión de Python | `PY_VERSION` / `PBS_TAG` en ambos scripts |
+| Bibliotecas extra | `requirements.txt` → re-generar `requirements.lock` → reconstruir |
+| Notebooks nuevos | `notebooks/` se actualiza barato re-empacando el tarball (o como kit aparte) |

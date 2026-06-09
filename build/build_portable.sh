@@ -4,28 +4,38 @@
 # PortableSatelital. CORRE EN EL SO/ARCH DESTINO (no cross-buildea: las wheels
 # de GDAL/numba son binarias por plataforma).
 #
-# Qué hace:
-#   1) baja python-build-standalone (CPython portable, con pip, relocatable)
-#   2) instala el requirements.txt DENTRO del portable (sin activar venv)
+# Qué hace (espejo de build_portable.ps1, la receta canónica):
+#   1) baja python-build-standalone y VERIFICA su SHA-256 contra el SHA256SUMS
+#      oficial del release de astral-sh
+#   2) instala requirements.lock DENTRO del portable con --require-hashes
+#      (cada wheel verificada por hash = linaje completo del stack)
+#      ⚠ OJO: requirements.lock se generó en Windows; si pip falla por hashes
+#      faltantes de TU plataforma, re-genera el lock aquí:
+#         "$PY" -m pip install pip-tools && \
+#         "$PY" -m piptools compile --generate-hashes --strip-extras \
+#               -o requirements-$(uname -s).lock requirements.txt
+#      y usa ese lock (repórtalo al líder para auditoría).
 #   3) escribe la config de Jupyter SIN token (bind 127.0.0.1)
-#   4) PRUEBA DE RELOCALIZACIÓN: copia a otra ruta y verifica que importa y lee GDAL
-#   5) empaqueta el tarball + saca sha256
+#   4) copia notebooks/ (si existe en la raíz del proyecto)
+#   5) PRUEBA DE RELOCALIZACIÓN: copia a otra ruta y verifica imports + GeoTIFF
+#      real + pip funcional (los alumnos usan %pip install en clase)
+#   6) empaqueta el tarball (preservando +x y symlinks) + saca sha256
 #
-# Uso:   ./build_portable.sh [carpeta_salida] [requirements.txt]
-# Ej:    ./build_portable.sh portable ../requirements.txt
+# El tarball NO incluye launcher: la arquitectura es UN solo launcher visual
+# (SatLab) que descarga/extrae este tarball y lanza Jupyter.
+#
+# Uso:   ./build_portable.sh [carpeta_salida] [lockfile]
 # =============================================================================
 set -euo pipefail
 
-# --- CONFIG (ajusta) ---------------------------------------------------------
-PY_VERSION="3.11.9"     # versión de CPython
-PBS_TAG="20240415"      # release de python-build-standalone — VERIFICA EL ÚLTIMO:
-                        # https://github.com/astral-sh/python-build-standalone/releases
-# Auto-localización: funciona sin importar desde dónde se invoque ni dónde esté
-# la carpeta PortableSatelital (muévela a D:\, USB, otra máquina — da igual).
+# --- CONFIG ------------------------------------------------------------------
+PY_VERSION="3.11.15"
+PBS_TAG="20260602"      # https://github.com/astral-sh/python-build-standalone/releases
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="$(dirname "$SCRIPT_DIR")"        # raíz de PortableSatelital (padre de build/)
-OUT="${1:-portable}"                   # salida (relativa a tu CWD)
-REQ="${2:-$ROOT/requirements.txt}"     # requirements.txt auto-localizado en la carpeta
+ROOT="$(dirname "$SCRIPT_DIR")"
+OUT="${1:-portable}"
+REQ="${2:-$ROOT/requirements.lock}"
 
 # --- detectar SO / arch / triple --------------------------------------------
 s="$(uname -s)"; m="$(uname -m)"
@@ -46,53 +56,87 @@ asset="cpython-${PY_VERSION}+${PBS_TAG}-${triple}-install_only.tar.gz"
 url="https://github.com/astral-sh/python-build-standalone/releases/download/${PBS_TAG}/${asset}"
 
 echo "==> SO=$os arch=$arch triple=$triple"
-echo "==> [1/5] Bajando $asset"
+echo "==> [1/6] Bajando $asset"
 rm -rf "$OUT"; mkdir -p "$OUT"
-curl -fL -o "/tmp/$asset" "$url"
+curl -fL --retry 3 --retry-delay 2 -o "/tmp/$asset" "$url"
+
+echo "==> [1/6] Verificando SHA-256 del intérprete contra astral-sh (SHA256SUMS)"
+curl -fsSL --retry 3 --retry-delay 2 \
+  -o /tmp/PBS_SHA256SUMS \
+  "https://github.com/astral-sh/python-build-standalone/releases/download/${PBS_TAG}/SHA256SUMS"
+want="$(grep "  ${asset}\$" /tmp/PBS_SHA256SUMS | cut -d' ' -f1 || true)"
+[ -n "$want" ] || { echo "el asset no aparece en SHA256SUMS"; exit 1; }
+if command -v sha256sum >/dev/null 2>&1; then got=$(sha256sum "/tmp/$asset" | cut -d' ' -f1)
+else got=$(shasum -a 256 "/tmp/$asset" | cut -d' ' -f1); fi
+[ "$want" = "$got" ] || { echo "SHA-256 NO coincide (esperado $want, obtenido $got)"; exit 1; }
+echo "    sha256 OK: $got"
 tar -xzf "/tmp/$asset" -C "$OUT"          # extrae a  $OUT/python/
 PY="$OUT/python/bin/python3"
 
-echo "==> [2/5] Instalando el stack (sin activar nada)"
+echo "==> [2/6] Instalando el stack con hashes verificados (sin venv)"
 "$PY" -m pip install --upgrade pip
-"$PY" -m pip install -r "$REQ"            # requirements.txt trae numpy<2; GDAL viene en las wheels
+case "$REQ" in
+  *.lock) "$PY" -m pip install --require-hashes -r "$REQ" ;;
+  *)      echo "    aviso: instalando SIN --require-hashes (no es el .lock)"
+          "$PY" -m pip install -r "$REQ" ;;
+esac
 chmod -R +x "$OUT/python/bin"
 
-echo "==> [3/5] Config de Jupyter SIN token (bind 127.0.0.1)"
+echo "==> [3/6] Config de Jupyter SIN token (bind 127.0.0.1)"
 mkdir -p "$OUT/jupyter-config"
 cat > "$OUT/jupyter-config/jupyter_server_config.py" <<'CFG'
-# Jupyter SIN token (decisión del proyecto). Seguro porque escucha SOLO en 127.0.0.1.
+# Jupyter SIN token (decisión del proyecto). Seguro porque escucha SOLO en
+# 127.0.0.1 (local; NO expuesto a la red de la oficina).
 c.ServerApp.token = ''
 c.ServerApp.password = ''
 c.ServerApp.ip = '127.0.0.1'
 c.ServerApp.open_browser = False
 CFG
 
-echo "==> [4/5] PRUEBA DE RELOCALIZACIÓN (lo que más falla)"
+echo "==> [4/6] Copiando notebooks/"
+if [ -d "$ROOT/notebooks" ]; then
+  cp -a "$ROOT/notebooks" "$OUT/notebooks"
+else
+  mkdir -p "$OUT/notebooks"
+  echo "    aviso: no hay notebooks/ en la raíz; el tarball lleva la carpeta vacía."
+fi
+
+echo "==> [5/6] PRUEBA DE RELOCALIZACIÓN (lo que más falla)"
 TMP="$(mktemp -d)/relocado"
 cp -a "$OUT" "$TMP"
 "$TMP/python/bin/python3" -m jupyterlab --version
+"$TMP/python/bin/python3" -m pip --version    # %pip de los alumnos debe funcionar movido
 "$TMP/python/bin/python3" - <<'PYTEST'
-import numpy, rasterio, geopandas, numba, pyshepseg, exactextract, sklearn
+import numpy, rasterio, geopandas, numba, pyshepseg, exactextract, sklearn, scipy, pandas, matplotlib
 assert numpy.__version__.startswith("1."), "numpy debe ser <2, es: " + numpy.__version__
-print("GDAL", rasterio.__gdal_version__, "| numpy", numpy.__version__, "| OK tras mover")
+# GeoTIFF REAL de ida y vuelta (no solo imports): GDAL + PROJ de las wheels
+import os, tempfile
+from rasterio.transform import from_origin
+arr = (numpy.random.rand(2, 64, 64) * 255).astype("uint8")
+path = os.path.join(tempfile.gettempdir(), "satlab_test.tif")
+with rasterio.open(path, "w", driver="GTiff", height=64, width=64, count=2,
+                   dtype="uint8", crs="EPSG:6372", transform=from_origin(2500000, 1200000, 30, 30)) as dst:
+    dst.write(arr)
+with rasterio.open(path) as src:
+    back = src.read()
+    assert back.shape == (2, 64, 64) and src.crs is not None
+os.remove(path)
+print("GDAL", rasterio.__gdal_version__, "| numpy", numpy.__version__, "| GeoTIFF OK | OK tras mover")
 PYTEST
 rm -rf "$TMP"
 
-echo "==> [5/5] Empaquetando"
-# OJO: antes del tarball, agrega a  $OUT/  el binario  sat-launcher  (compilado aparte)
-# y la carpeta  notebooks/  (tutorial + datos de ejemplo).
-if [ ! -e "$OUT/sat-launcher" ]; then
-  echo "    ⚠ aviso: no encuentro $OUT/sat-launcher — empaco solo el python (agrega el launcher y re-empaca)."
-fi
+echo "==> [6/6] Empaquetando"
 if [ "$os" = "macos" ]; then
   xattr -dr com.apple.quarantine "$OUT" 2>/dev/null || true   # Gatekeeper
-  echo "    (macOS: recuerda firmar ad-hoc el binario sat-launcher cuando lo agregues)"
 fi
 tarball="portable-satelital-${os}-${arch}.tar.gz"
-tar -czf "$tarball" "$OUT"
+# Empaca el CONTENIDO (python/, jupyter-config/, notebooks/) en la raíz del tar,
+# preservando symlinks y bits +x (imprescindible en macOS/Linux).
+tar -czf "$tarball" -C "$OUT" python jupyter-config notebooks
 if command -v sha256sum >/dev/null 2>&1; then sha=$(sha256sum "$tarball" | cut -d' ' -f1)
 else sha=$(shasum -a 256 "$tarball" | cut -d' ' -f1); fi
+echo "$sha" > "$tarball.sha256"
 echo ""
 echo "LISTO: $tarball"
 echo "sha256=$sha"
-echo "-> súbelo a HF (LFS) y registra la clave en manifest.txt (anti-clobber)."
+echo "-> repórtalo al líder: él lo sube a HF, registra la clave en manifest.txt y re-firma."
