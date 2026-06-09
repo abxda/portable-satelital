@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>SatLab WASM smoke</title></head>
+<body>
+<h3>SatLab — prueba Shepherd en WASM (ver consola)</h3>
+<pre id="log"></pre>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.js"></script>
+<script>
+const logEl = document.getElementById("log");
+function log(m) { console.log(m); logEl.textContent += m + "\n"; }
+
+async function main() {
+  try {
+    log("cargando pyodide...");
+    const t0 = performance.now();
+    const pyodide = await loadPyodide();
+    log("pyodide " + pyodide.version + " en " + ((performance.now()-t0)/1000).toFixed(1) + "s");
+
+    log("cargando paquetes (numpy, scipy, scikit-learn, rasterio)...");
+    const t1 = performance.now();
+    await pyodide.loadPackage(["numpy", "scipy", "scikit-learn", "rasterio"]);
+    log("paquetes en " + ((performance.now()-t1)/1000).toFixed(1) + "s");
+
+    // shepherd_pure.py y el tile real al FS de pyodide
+    const code = await (await fetch("/wasm/shepherd_pure.py")).text();
+    pyodide.FS.writeFile("shepherd_pure.py", code);
+    const tif = new Uint8Array(await (await fetch("/wasm/files/tile_ags_512.tif")).arrayBuffer());
+    pyodide.FS.writeFile("tile.tif", tif);
+    log("tile " + (tif.length/1e6).toFixed(1) + " MB en el FS");
+
+    const t2 = performance.now();
+    const result = await pyodide.runPythonAsync(`
+import json, time
+import numpy as np
+import rasterio
+import shepherd_pure
+
+with rasterio.open("tile.tif") as src:
+    img = src.read().astype(np.float32)
+    nodata = src.nodata
+    crs = str(src.crs)
+
+sub = img[:, :256, :256]          # subventana para el smoke (rapida)
+t0 = time.time()
+res = shepherd_pure.doShepherdSegmentation(
+    sub, numClusters=30, minSegmentSize=50, imgNullVal=nodata,
+    fixedKMeansInit=True)
+secs = time.time() - t0
+json.dumps({
+    "bandas": int(img.shape[0]), "crs": crs,
+    "n_segmentos": int(res.segimg.max()),
+    "singles": int(res.singlePixelsEliminated),
+    "small": int(res.smallSegmentsEliminated),
+    "maxSpectralDiff": float(res.maxSpectralDiff),
+    "segundos_segmentacion": round(secs, 1),
+})
+`);
+    log("segmentacion en " + ((performance.now()-t2)/1000).toFixed(1) + "s (total python)");
+    log("WASM_RESULT:" + result);
+  } catch (e) {
+    log("WASM_ERROR:" + e);
+  }
+}
+main();
+</script>
+</body>
+</html>

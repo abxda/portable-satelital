@@ -33,3 +33,6 @@ satlab-launcher/frontend/wailsjs/
 *.tgz
 /python/
 notebooks/data/
+
+# staging del build de jupyterlite
+wasm/_contents/
