@@ -21,7 +21,7 @@ import (
 
 // AppVersion se compara contra el descriptor de self-update publicado en HF.
 // Súbela en cada release (y publica el descriptor con la MISMA versión).
-const AppVersion = "0.1.3"
+const AppVersion = "0.1.4"
 
 // App es el backend que la UI (frontend/dist) invoca vía bindings de Wails.
 type App struct {
@@ -424,11 +424,18 @@ func (a *App) startJupyter() error {
 		"JUPYTER_RUNTIME_DIR="+filepath.Join(dataDir, "runtime"),
 		"PYTHONIOENCODING=utf-8",
 	)
-	// GDAL/PROJ: normalmente las wheels se resuelven solas; si los datos están
-	// donde se espera, los exportamos explícitos (cinturón y tirantes).
+	// GDAL/PROJ explícitos. CRÍTICO en Linux: libproj consulta PROJ_LIB (nombre
+	// LEGADO) además de PROJ_DATA (moderno); si PROJ_LIB queda sin definir y el
+	// alumno tiene un PROJ viejo del sistema, libproj cae a /usr/share/proj y
+	// truena con "proj.db VERSION.MINOR = 4 ... >= 6 expected" (reporte del
+	// agente Linux, 2026-06-09). Exportamos AMBAS al proj.db de las wheels.
 	sitePk := sitePackages(pyDir)
-	if p := filepath.Join(sitePk, "pyproj", "proj_dir", "share", "proj"); isDir(p) {
-		env = append(env, "PROJ_DATA="+p)
+	projDir := filepath.Join(sitePk, "pyproj", "proj_dir", "share", "proj")
+	if !isDir(projDir) {
+		projDir = filepath.Join(sitePk, "rasterio", "proj_data") // fallback: el de rasterio
+	}
+	if isDir(projDir) {
+		env = append(env, "PROJ_DATA="+projDir, "PROJ_LIB="+projDir)
 	}
 	if p := filepath.Join(sitePk, "rasterio", "gdal_data"); isDir(p) {
 		env = append(env, "GDAL_DATA="+p)
