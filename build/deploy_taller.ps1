@@ -18,14 +18,19 @@ if (Test-Path $C) { Remove-Item -Recurse -Force $C }
 New-Item -ItemType Directory -Force $C | Out-Null
 Copy-Item (Join-Path $Wasm "taller\Taller_ML_Urbano_WASM.ipynb") $C
 Copy-Item (Join-Path $Wasm "taller\Mi_Lienzo.ipynb") $C
-Copy-Item (Join-Path $Wasm "shepherd_pure.py") $C
+# shepherd_pure NO va como archivo en la raiz: viaja como WHEEL (piplite) y
+# el cuaderno hace %pip install -q shepherd-pure (resuelve offline).
 Copy-Item (Join-Path $Wasm "files\tile_ags_256.tif") $C
 Copy-Item (Join-Path $Wasm "files\labels_256.tif") $C
 
 Write-Host "==> [2/4] jupyter lite build"
 if (Test-Path $Site) { Remove-Item -Recurse -Force $Site }
+# limpiar el cache de doit: si no, omite tareas (p.ej. extraer pyodide) aunque
+# el output-dir se haya borrado
+Remove-Item (Join-Path $Wasm ".jupyterlite.doit.db") -Force -ErrorAction SilentlyContinue
+$Wheel = (Get-ChildItem (Join-Path $Root "dist\wheels\shepherd_pure-*.whl") | Select-Object -First 1).FullName
 Push-Location $Wasm
-& $Jupyter lite build --contents _contents --settings-overrides overrides.json --output-dir $Site
+& $Jupyter lite build --contents _contents --settings-overrides overrides.json --piplite-wheels $Wheel --output-dir $Site
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw "jupyter lite build fallo" }
 Pop-Location
 
