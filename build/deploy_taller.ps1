@@ -18,10 +18,9 @@ if (Test-Path $C) { Remove-Item -Recurse -Force $C }
 New-Item -ItemType Directory -Force $C | Out-Null
 Copy-Item (Join-Path $Wasm "taller\Taller_ML_Urbano_WASM.ipynb") $C
 Copy-Item (Join-Path $Wasm "taller\Mi_Lienzo.ipynb") $C
-# shepherd_pure NO va como archivo en la raiz: viaja como WHEEL (piplite) y
-# el cuaderno hace %pip install -q shepherd-pure (resuelve offline).
-Copy-Item (Join-Path $Wasm "files\tile_ags_256.tif") $C
-Copy-Item (Join-Path $Wasm "files\labels_256.tif") $C
+# shepherd va como WHEEL (piplite): %pip install -q shepherd-wasm.
+# Los DATOS estatales NO van en el sitio (GitHub Pages topa en 100MB/archivo):
+# el cuaderno los trae de mis_datos (kit) o de Hugging Face (en linea).
 
 Write-Host "==> [2/4] jupyter lite build"
 if (Test-Path $Site) { Remove-Item -Recurse -Force $Site }

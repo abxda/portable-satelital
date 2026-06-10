@@ -114,8 +114,9 @@
 
 <!-- ════════ 2 · FIRMAS ESPECTRALES (interactivo) ════════ -->
 <div class="cell"><span class="gut">[teoría 2]</span>
-<h2><span class="n">2</span>El píxel no es un color: es una firma de 12 números</h2>
-<p>Nuestros ojos ven 3 bandas (rojo, verde, azul). Sentinel-2 registra <b>12 bandas espectrales</b>, incluyendo infrarrojos donde la vegetación brilla, el agua se apaga y el concreto se delata. Cada píxel es una <b>columna de 12 mediciones</b>: su <b>firma espectral</b> — la "huella digital" de lo que hay en ese pedacito de territorio.</p>
+<h2><span class="n">2</span>El píxel no es un color: es una firma espectral</h2>
+<p>Nuestros ojos ven 3 bandas (rojo, verde, azul). Sentinel-2 registra <b>12 bandas espectrales</b>, incluyendo infrarrojos donde la vegetación brilla, el agua se apaga y el concreto se delata. Cada píxel es una <b>columna de mediciones</b>: su <b>firma espectral</b> — la "huella digital" de lo que hay en ese pedacito de territorio.</p>
+<p>En el taller usarás la versión <b>"calidad Landsat"</b> de esa imagen: remuestreada de 10 a <b>30 metros</b> y reducida a las <b>6 bandas clásicas</b> (azul, verde, rojo, NIR, SWIR1, SWIR2) con las que la familia Landsat lleva 50 años observando la Tierra. La firma se conserva donde importa — los infrarrojos siguen ahí — y la imagen baja de 2.5 GB a 176 MB: lo justo para que <b>todo el estado de Aguascalientes</b> quepa en tu navegador.</p>
 <p>Esta es la idea más importante del taller: <b>el modelo de machine learning no verá colores, verá firmas</b>.</p>
 </div>
 <div class="cell fig"><span class="gut">[figura 2]</span>
@@ -432,12 +433,12 @@
 <!-- celda código 1 -->
 <g transform="translate(160,96)">
   <rect width="440" height="36" rx="6" fill="#eef2ff" stroke="#c7d2fe" id="c1box"/>
-  <text x="12" y="23" fill="#3730a3" font-size="12.5" font-family="Consolas,monospace">img = rasterio.open("GM_AGS_2020.tif").read()</text>
+  <text x="12" y="23" fill="#3730a3" font-size="12.5" font-family="Consolas,monospace">img = rasterio.open("ags_landsat_30m.tif").read()</text>
   <text x="-14" y="23" fill="#94a3b8" font-size="11" font-family="Consolas,monospace" text-anchor="end" id="c1n">[ ]</text>
 </g>
 <g transform="translate(160,140)" id="c1out" opacity="0">
   <rect width="440" height="26" rx="5" fill="#f0fdf4" stroke="#bbf7d0"/>
-  <text x="12" y="17" fill="#15803d" font-size="12" font-family="Consolas,monospace">✓ imagen: 12 bandas × 256 × 256 píxeles</text>
+  <text x="12" y="17" fill="#15803d" font-size="12" font-family="Consolas,monospace">✓ imagen: 6 bandas × 3335 × 3696 píxeles — todo Aguascalientes</text>
 </g>
 <!-- celda código 2 -->
 <g transform="translate(160,176)">
@@ -519,12 +520,12 @@
 <!-- ════════ 10 · PORTABLE ════════ -->
 <div class="cell"><span class="gut">[teoría 10]</span>
 <h2><span class="n">10</span>Opción B: el laboratorio portable (cuando los datos crecen)</h2>
-<p>El navegador es imbatible para aprender con recortes. Pero la geomediana estatal completa pesa <b>2.66 GB</b>, y el navegador tiene un techo de memoria. Para esas sesiones entregamos <b>SatLab</b>: un solo ejecutable que instala en una carpeta un JupyterLab idéntico, con todo el stack verificado criptográficamente. <b>El mismo cuaderno corre en ambos</b> — solo cambia el motor debajo.</p>
+<p>El navegador es imbatible para aprender — y con la imagen calidad Landsat procesa <b>el estado completo</b>. Pero el siguiente nivel de detalle, la geomediana Sentinel-2 de 10 m y 12 bandas, pesa <b>2.66 GB</b>: más que el techo de memoria de una pestaña. Para esas sesiones entregamos <b>SatLab</b>: un solo ejecutable que instala en una carpeta un JupyterLab idéntico, con todo el stack verificado criptográficamente — y desde el cual puedes además <b>descargar imágenes frescas de tu zona con Google Earth Engine</b>. <b>El mismo cuaderno corre en ambos</b> — solo cambia el motor debajo.</p>
 <table>
 <tr><th></th><th>🌐 Navegador (WASM)</th><th>💻 Portable (SatLab)</th></tr>
 <tr><td>Instalación</td><td class="si">ninguna — abrir una URL</td><td>descargar 1 ejecutable + 1 clic</td></tr>
 <tr><td>Permisos de administrador</td><td class="si">no</td><td class="si">no</td></tr>
-<tr><td>Tamaño de datos</td><td class="no">recortes (memoria limitada)</td><td class="si">escena estatal completa (GB)</td></tr>
+<tr><td>Tamaño de datos</td><td class="si">el estado a 30 m (calidad Landsat)</td><td class="si">Sentinel-2 completa a 10 m (GB)</td></tr>
 <tr><td>Velocidad</td><td>buena (≈ nativa en tiles)</td><td class="si">máxima + todos tus núcleos</td></tr>
 <tr><td>Sin internet (después de instalar)</td><td class="no">requiere cargar la página</td><td class="si">funciona 100% sin conexión</td></tr>
 <tr><td>Huella al desinstalar</td><td class="si">cerrar la pestaña</td><td class="si">borrar la carpeta</td></tr>
@@ -546,7 +547,7 @@
       <rect x="-95" y="0" width="190" height="120" rx="12" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
       <text x="0" y="26" text-anchor="middle" font-size="22">🌐</text>
       <text x="0" y="50" text-anchor="middle" fill="#0369a1" font-size="13" font-weight="800">NAVEGADOR</text>
-      <text x="0" y="72" text-anchor="middle" fill="#334155" font-size="11.5">aprender · recortes · 0 instalación</text>
+      <text x="0" y="72" text-anchor="middle" fill="#334155" font-size="11.5">aprender · el estado a 30 m · 0 instalación</text>
       <text x="0" y="92" text-anchor="middle" fill="#334155" font-size="11.5">taller de hoy ✓</text>
     </g>
     <!-- plato portable -->
@@ -554,7 +555,7 @@
       <rect x="-95" y="0" width="190" height="120" rx="12" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
       <text x="0" y="26" text-anchor="middle" font-size="22">💻</text>
       <text x="0" y="50" text-anchor="middle" fill="#15803d" font-size="13" font-weight="800">PORTABLE (SatLab)</text>
-      <text x="0" y="72" text-anchor="middle" fill="#334155" font-size="11.5">producir · estado completo (2.66 GB)</text>
+      <text x="0" y="72" text-anchor="middle" fill="#334155" font-size="11.5">producir · Sentinel-2 a 10 m (2.66 GB)</text>
       <text x="0" y="92" text-anchor="middle" fill="#334155" font-size="11.5">sesiones avanzadas ✓</text>
     </g>
   </g>
