@@ -8,7 +8,11 @@
 //  3. GET /api/mis_datos devuelve la lista de archivos en JSON (para que el
 //     cuaderno los enumere).
 //
-// Qué NO hace: no escribe nada, no acepta subidas, no escucha fuera de
+//  4. POST /api/guardar/<nombre> escribe el cuerpo EXCLUSIVAMENTE dentro de
+//     ./mis_datos/salidas/ (nombre saneado con filepath.Base, tope 200 MB):
+//     así los productos del cuaderno aterrizan en la carpeta del estudiante.
+//
+// Qué NO hace: no escribe fuera de mis_datos/salidas, no escucha fuera de
 // 127.0.0.1, no toca el registro, no requiere administrador.
 //
 // Garantías de procedencia (sin firma Authenticode):
@@ -21,12 +25,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"mime"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -84,6 +90,39 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Cache-Control", "no-store")
 		_ = json.NewEncoder(w).Encode(lista)
+	})
+
+	// POST /api/guardar/<nombre>: el cuaderno deposita productos en la
+	// carpeta del estudiante. Escritura acotada a mis_datos/salidas/.
+	salidas := filepath.Join(datos, "salidas")
+	mux.HandleFunc("/api/guardar/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "solo POST", http.StatusMethodNotAllowed)
+			return
+		}
+		nombre := filepath.Base(strings.TrimPrefix(r.URL.Path, "/api/guardar/"))
+		if nombre == "" || nombre == "." || nombre == ".." || strings.HasPrefix(nombre, ".") {
+			http.Error(w, "nombre invalido", http.StatusBadRequest)
+			return
+		}
+		if err := os.MkdirAll(salidas, 0o755); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, 200<<20) // tope 200 MB
+		f, err := os.Create(filepath.Join(salidas, nombre))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		n, err := io.Copy(f, r.Body)
+		f.Close()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"ok":true,"bytes":%d}`, n)
 	})
 
 	url := "http://127.0.0.1:" + puerto + "/lab/index.html?path=Taller_ML_Urbano_WASM.ipynb"

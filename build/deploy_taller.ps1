@@ -17,6 +17,7 @@ $C = Join-Path $Wasm "_contents"
 if (Test-Path $C) { Remove-Item -Recurse -Force $C }
 New-Item -ItemType Directory -Force $C | Out-Null
 Copy-Item (Join-Path $Wasm "taller\Taller_ML_Urbano_WASM.ipynb") $C
+Copy-Item (Join-Path $Wasm "taller\Mi_Lienzo.ipynb") $C
 Copy-Item (Join-Path $Wasm "shepherd_pure.py") $C
 Copy-Item (Join-Path $Wasm "files\tile_ags_256.tif") $C
 Copy-Item (Join-Path $Wasm "files\labels_256.tif") $C
