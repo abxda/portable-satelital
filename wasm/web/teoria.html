@@ -237,51 +237,49 @@
 <div class="cell"><span class="gut">[teoría 4]</span>
 <h2><span class="n">4</span>Del píxel al objeto: la segmentación</h2>
 <p>Clasificar píxel por píxel produce mapas "de sal y pimienta". El enfoque profesional (<b>GEOBIA</b>) agrupa primero los píxeles en <b>segmentos</b> — regiones contiguas y homogéneas que corresponden a cosas reales: una parcela, una manzana, una presa — y clasifica los segmentos.</p>
-<p>El artículo original usaba una cuadrícula de 100×100 m; el curso evolucionó a la <b>segmentación de Shepherd</b> (Shepherd, Bunting &amp; Dymond, 2019): siembra K-means → aglomerado de vecinos → eliminación iterativa de grupos chicos. En el taller controlarás su parámetro clave: <code>minSegmentSize</code>.</p>
-<div class="hint">💡 Usarás <code>shepherd-wasm</code>: nuestra implementación validada <b>bit a bit</b> contra la referencia, capaz de correr en tu navegador.</div>
+<p>El artículo original usaba una cuadrícula de 100×100 m; el curso evolucionó a la <b>segmentación de Shepherd</b> (Shepherd, Bunting &amp; Dymond, 2019). Son <b>tres subprocesos</b>, y cada uno arregla lo que el anterior deja pendiente:</p>
+<ol>
+<li><b>① Siembra (K-means)</b> — agrupa los píxeles en <code>numClusters</code> <b>familias espectrales</b> mirando solo su firma, <i>sin geografía</i>. Resultado: sal y pimienta (vecinos de la misma manzana caen en familias distintas).</li>
+<li><b>② Aglomerado (clumping)</b> — los píxeles <i>contiguos</i> de la misma familia se funden en "grupitos". La geografía entra aquí; pero queda confeti de fragmentos diminutos.</li>
+<li><b>③ Eliminación iterativa</b> — todo grupo menor a <code>minSegmentSize</code> se fusiona, del más chico al más grande, con su vecino <i>espectralmente más parecido</i>. Sobreviven solo objetos con tamaño suficiente.</li>
+</ol>
+<p>La figura de abajo <b>no es una caricatura: es este algoritmo corriendo de verdad</b>, aquí en la página, sobre un paisaje en miniatura como el del taller — cultivos, una <b>presita de 4 píxeles</b>, la ciudad y su <b>parque</b>. Juega: cambia ① y ③, recorre los pasos y observa los contadores. Pregunta clave: <i>¿con qué valor de <code>minSegmentSize</code> desaparece la presita?</i></p>
+<div class="hint">💡 En el taller usarás <code>shepherd-wasm</code> — nuestra implementación validada <b>bit a bit</b> contra la referencia — con estos mismos dos parámetros, sobre los 12 millones de píxeles de Aguascalientes.</div>
 </div>
 <div class="cell fig"><span class="gut">[figura 4]</span>
 <div class="ibar">
-  <span style="font-size:13px;color:#334155;font-weight:700">minSegmentSize:&nbsp;</span>
-  <button class="ibtn on" id="bFino" onclick="segdetalle(true)">20 px (fino)</button>
-  <button class="ibtn" id="bGrueso" onclick="segdetalle(false)">100 px (grueso)</button>
+  <span style="font-size:12.5px;color:#334155;font-weight:700">① numClusters:</span>
+  <button class="ibtn" id="sK3" onclick="segSet(3)">3</button>
+  <button class="ibtn on" id="sK5" onclick="segSet(5)">5</button>
+  <button class="ibtn" id="sK8" onclick="segSet(8)">8</button>
+  <span style="font-size:12.5px;color:#334155;font-weight:700;margin-left:12px">③ minSegmentSize:</span>
+  <button class="ibtn" id="sM1" onclick="segSet(null,1)">1 px</button>
+  <button class="ibtn on" id="sM4" onclick="segSet(null,4)">4 px</button>
+  <button class="ibtn" id="sM10" onclick="segSet(null,10)">10 px</button>
+  <button class="ibtn" style="margin-left:12px;border-color:#0ea5e9;color:#0369a1" onclick="segPlay()">▶ ver el proceso</button>
 </div>
-<svg viewBox="0 0 760 300" role="img" aria-label="Efecto de minSegmentSize">
-<g transform="translate(95,150)">
-  <text x="100" y="-104" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700">píxeles crudos</text>
-  <g transform="scale(1.15)">
-    <g id="ruido"></g>
+<svg viewBox="0 0 760 250" role="img" aria-label="Mini segmentador Shepherd: el algoritmo real corriendo en la página">
+  <text x="200" y="16" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700">la imagen — borde de la ciudad</text>
+  <g id="segImgG" transform="translate(30,26)"></g>
+  <g transform="translate(30,26)" pointer-events="none" font-weight="700" font-size="11">
+    <text x="51" y="115" text-anchor="middle" fill="#fff" opacity=".95">cultivos</text>
+    <text x="153" y="80" text-anchor="middle" fill="#0f172a">presita ⌄</text>
+    <text x="272" y="115" text-anchor="middle" fill="#fff" opacity=".95">ciudad</text>
+    <text x="289" y="36" text-anchor="middle" fill="#0f172a" font-size="10">parque ⌄</text>
   </g>
-</g>
-<path d="M340,150 h55" stroke="#0ea5e9" stroke-width="4"/><path d="M395,150 l-9,-6 v12 Z" fill="#0ea5e9"/>
-<text x="367" y="136" text-anchor="middle" fill="#0369a1" font-size="12" font-weight="700">Shepherd</text>
-<g transform="translate(430,150)">
-  <text x="140" y="-104" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700" id="segTitulo">objetos (detalle fino)</text>
-  <!-- FINO: 6 objetos -->
-  <g id="segFino">
-    <g stroke="#b45309" stroke-width="2.5" fill-opacity=".9">
-      <path d="M0,0 L56,-28 L112,0 L56,28 Z" fill="#84cc16"/>
-      <path d="M112,0 L168,-28 L224,0 L168,28 Z" fill="#eab308"/>
-      <path d="M56,28 L112,0 L168,28 L112,56 Z" fill="#0ea5e9"/>
-      <path d="M0,-56 L56,-84 L112,-56 L56,-28 Z" fill="#65a30d"/>
-      <path d="M112,-56 L168,-84 L224,-56 L168,-28 Z" fill="#94a3b8"/>
-      <path d="M56,-28 L112,-56 L168,-28 L112,0 Z" fill="#4d7c0f"/>
-    </g>
-    <text x="112" y="92" text-anchor="middle" fill="#475569" font-size="12.5">6 objetos chicos — más detalle, más ruido</text>
-  </g>
-  <!-- GRUESO: 3 objetos -->
-  <g id="segGrueso" style="display:none">
-    <g stroke="#b45309" stroke-width="2.5" fill-opacity=".9">
-      <path d="M0,0 L112,-56 L224,0 L112,56 Z" fill="#84cc16"/>
-      <path d="M0,-56 L56,-84 L112,-56 L56,-28 Z" fill="#65a30d"/>
-      <path d="M56,-28 L168,-84 L224,-56 L112,0 Z" fill="#94a3b8"/>
-    </g>
-    <text x="112" y="92" text-anchor="middle" fill="#475569" font-size="12.5">3 objetos grandes — más limpio, menos detalle</text>
-  </g>
-</g>
-<text x="380" y="288" text-anchor="middle" fill="#334155" font-size="13">el tamaño mínimo decide el "grano" del análisis: parcelas individuales… o paisajes completos</text>
+  <path d="M374,128 h26" stroke="#0ea5e9" stroke-width="4"/><path d="M386,128 m14,0 l-9,-6 v12 Z" fill="#0ea5e9"/>
+  <text x="560" y="16" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700" id="segResTit"></text>
+  <g id="segResG" transform="translate(390,26)"></g>
 </svg>
-<span class="try">⬆ interactivo: el mismo dilema que enfrentarás en la celda "Experimenta tú" del taller</span>
+<div class="ibar">
+  <span style="font-size:12.5px;color:#334155;font-weight:700">ver subproceso:</span>
+  <button class="ibtn" id="sP1" onclick="segSet(null,null,1)">① familias</button>
+  <button class="ibtn" id="sP2" onclick="segSet(null,null,2)">② grupitos</button>
+  <button class="ibtn on" id="sP3" onclick="segSet(null,null,3)">③ objetos</button>
+</div>
+<div id="segStats" style="text-align:center;font:700 13.5px Consolas,monospace;color:#0f172a;background:#fff;padding:6px 0 2px"></div>
+<div id="segMoraleja" style="text-align:center;font-size:13px;color:#475569;background:#fff;padding:4px 16px 8px;max-width:690px;margin:0 auto;min-height:34px"></div>
+<span class="try">⬆ esto no es una caricatura: es el algoritmo de Shepherd corriendo aquí mismo, en tu navegador — igual que lo hará en el taller</span>
 </div>
 
 <!-- ════════ 5 · ETIQUETAS ════════ -->
@@ -652,25 +650,189 @@ function firma(k) {
   for (const [id, kk] of [["bAgua","agua"],["bVege","vege"],["bUrba","urba"]])
     document.getElementById(id).classList.toggle("on", kk === k);
 }
-// ---------- figura 4: minSegmentSize ----------
-function buildRuido() {
-  const cols = ["#84cc16","#65a30d","#eab308","#0ea5e9","#94a3b8","#4d7c0f","#a3e635","#d97706"];
+// ---------- figura 4: mini-Shepherd REAL (siembra → aglomerado → eliminación) ----------
+const SW = 20, SH = 12, SCEL = 17, SN = SW * SH;
+let segK = 5, segMin = 4, segStep = 3;
+function segRng(s) {  // mulberry32: aleatorio determinista (misma figura para todos)
+  let t = s >>> 0;
+  return () => { t += 0x6D2B79F5; let r = Math.imul(t ^ t >>> 15, 1 | t);
+    r ^= r + Math.imul(r ^ r >>> 7, 61 | r); return ((r ^ r >>> 14) >>> 0) / 4294967296; };
+}
+// el paisaje del taller en miniatura: parcelas, presita (4 px), ciudad y parque (4 px)
+const SEGV = [], SEGRGB = [];
+(function () {
+  const rnd = segRng(42);
+  const A = [152,205,95], B = [78,128,52], C = [214,178,70], E = [118,168,66],
+        D = [176,196,84], W = [36,92,158],
+        U = [[148,148,154],[108,108,116],[186,183,178]];
+  for (let r = 0; r < SH; r++) for (let c = 0; c < SW; c++) {
+    let b, nz = 9;
+    const presa  = (c >= 8 && c <= 9 && r >= 5 && r <= 6);
+    const parque = (c >= 16 && c <= 17 && r >= 2 && r <= 3);
+    if (presa) b = W;
+    else if (c >= 12) { if (parque) b = B; else { b = U[Math.floor(rnd() * 3)]; nz = 13; } }
+    else if (c < 6) b = r < 6 ? A : B;
+    else b = r < 4 ? C : (r >= 8 ? D : E);
+    const v = b.map(x => Math.max(0, Math.min(255, Math.round(x + (rnd() * 2 - 1) * nz))));
+    SEGV.push(v); SEGRGB.push(`rgb(${v[0]},${v[1]},${v[2]})`);
+  }
+})();
+function segKmeans(K) {  // ① siembra: k-means de verdad (init ++, 15 iteraciones)
+  const rnd = segRng(7), d2 = (a, b) => (a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2;
+  const cen = [SEGV[Math.floor(rnd() * SN)].slice()];
+  while (cen.length < K) {
+    const w = SEGV.map(v => Math.min(...cen.map(c => d2(v, c))));
+    let s = w.reduce((a, b) => a + b, 0) * rnd(), i = 0;
+    while (s > w[i] && i < SN - 1) s -= w[i++];
+    cen.push(SEGV[i].slice());
+  }
+  const asg = new Array(SN).fill(0);
+  for (let it = 0; it < 15; it++) {
+    for (let i = 0; i < SN; i++) { let bi = 0, bd = 1e18;
+      for (let k = 0; k < K; k++) { const dd = d2(SEGV[i], cen[k]); if (dd < bd) { bd = dd; bi = k; } }
+      asg[i] = bi; }
+    const sum = Array.from({ length: K }, () => [0, 0, 0, 0]);
+    for (let i = 0; i < SN; i++) { const s = sum[asg[i]];
+      s[0] += SEGV[i][0]; s[1] += SEGV[i][1]; s[2] += SEGV[i][2]; s[3]++; }
+    for (let k = 0; k < K; k++) if (sum[k][3])
+      cen[k] = [sum[k][0]/sum[k][3], sum[k][1]/sum[k][3], sum[k][2]/sum[k][3]];
+  }
+  return asg;
+}
+function segVecinos(p) {
+  const c = p % SW, out = [];
+  if (c > 0) out.push(p - 1); if (c < SW - 1) out.push(p + 1);
+  if (p >= SW) out.push(p - SW); if (p < SN - SW) out.push(p + SW);
+  return out;
+}
+function segClump(fam) {  // ② aglomerado: componentes conexas de la misma familia
+  const lab = new Array(SN).fill(-1); let nl = 0;
+  for (let i = 0; i < SN; i++) if (lab[i] < 0) {
+    const st = [i]; lab[i] = nl;
+    while (st.length) { const p = st.pop();
+      for (const q of segVecinos(p))
+        if (lab[q] < 0 && fam[q] === fam[p]) { lab[q] = nl; st.push(q); } }
+    nl++;
+  }
+  return { lab, n: nl };
+}
+function segElim(lab0, minSize) {  // ③ eliminación iterativa, del más chico al más grande
+  const lab = lab0.slice();
+  for (let guard = 0; guard < 2000; guard++) {
+    const size = {}, mean = {}, cells = {};
+    for (let i = 0; i < SN; i++) { const l = lab[i];
+      size[l] = (size[l] || 0) + 1; (cells[l] = cells[l] || []).push(i);
+      const m = mean[l] = mean[l] || [0, 0, 0];
+      m[0] += SEGV[i][0]; m[1] += SEGV[i][1]; m[2] += SEGV[i][2]; }
+    for (const l in mean) for (let j = 0; j < 3; j++) mean[l][j] /= size[l];
+    let small = null;
+    for (const l in size) if (size[l] < minSize && (small === null || size[l] < size[small])) small = l;
+    if (small === null) break;
+    const nb = new Set();
+    for (const p of cells[small]) for (const q of segVecinos(p))
+      if (String(lab[q]) !== small) nb.add(lab[q]);
+    let best = null, bd = 1e18;
+    for (const l of nb) { const m = mean[l], s = mean[small];
+      const dd = (m[0]-s[0])**2 + (m[1]-s[1])**2 + (m[2]-s[2])**2;
+      if (dd < bd) { bd = dd; best = l; } }
+    if (best === null) break;
+    for (const p of cells[small]) lab[p] = best;
+  }
+  const map = {}; let nn = 0;
+  const out = lab.map(l => (map[l] === undefined ? (map[l] = nn++) : map[l]));
+  return { lab: out, n: nn };
+}
+const SEGPAL = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#7f7f7f"];
+const segCache = {};
+function segCalc() {
+  if (!segCache[segK]) {
+    const fam = segKmeans(segK);
+    segCache[segK] = { fam, cl: segClump(fam) };
+  }
+  return segCache[segK];
+}
+function segRect(i, fill, stroke) {
+  const r = Math.floor(i / SW), c = i % SW;
+  return `<rect x="${c*SCEL}" y="${r*SCEL}" width="${SCEL}" height="${SCEL}" fill="${fill}"${
+    stroke ? ' stroke="#ffffff" stroke-opacity=".35" stroke-width=".7"' : ""}/>`;
+}
+function segPintaImg() {
   let h = "";
-  for (let r = -2; r < 3; r++)
-    for (let c = -2; c < 3; c++) {
-      const x = (c - r) * 22, y = (c + r) * 11;
-      const f = cols[Math.abs(r * 7 + c * 3) % cols.length];
-      h += `<path d="M${x},${y} l22,-11 l22,11 l-22,11 Z" fill="${f}" stroke="#fff" stroke-width=".6"/>`;
-    }
-  document.getElementById("ruido").innerHTML = h;
+  for (let i = 0; i < SN; i++) h += segRect(i, SEGRGB[i]);
+  h += `<rect width="${SW*SCEL}" height="${SH*SCEL}" fill="none" stroke="#475569"/>`;
+  document.getElementById("segImgG").innerHTML = h;
 }
-function segdetalle(fino) {
-  document.getElementById("segFino").style.display = fino ? "" : "none";
-  document.getElementById("segGrueso").style.display = fino ? "none" : "";
-  document.getElementById("segTitulo").textContent = fino ? "objetos (detalle fino)" : "objetos (detalle grueso)";
-  document.getElementById("bFino").classList.toggle("on", fino);
-  document.getElementById("bGrueso").classList.toggle("on", !fino);
+const SEGPRESA = [5*SW+8, 5*SW+9, 6*SW+8, 6*SW+9];
+const SEGPARQUE = [2*SW+16, 2*SW+17, 3*SW+16, 3*SW+17];
+function segSobrevive(fin, cs) {
+  const s = fin.lab[cs[0]];
+  return cs.every(p => fin.lab[p] === s) && fin.lab.filter(l => l === s).length <= 6;
 }
+function segRender() {
+  const { fam, cl } = segCalc();
+  const fin = segElim(cl.lab, segMin);
+  let h = "", tit = "";
+  if (segStep === 1) {
+    tit = `① siembra: ${segK} familias espectrales`;
+    for (let i = 0; i < SN; i++) h += segRect(i, SEGPAL[fam[i] % 8], true);
+  } else if (segStep === 2) {
+    tit = `② aglomerado: ${cl.n} grupitos contiguos`;
+    for (let i = 0; i < SN; i++)
+      h += segRect(i, `hsl(${(cl.lab[i] * 137.508) % 360},62%,72%)`, true);
+  } else {
+    tit = `③ eliminación: ${fin.n} objetos finales`;
+    for (let i = 0; i < SN; i++) h += segRect(i, SEGRGB[i]);
+    let b = "";
+    for (let i = 0; i < SN; i++) { const r = Math.floor(i / SW), c = i % SW;
+      if (c < SW-1 && fin.lab[i] !== fin.lab[i+1]) b += `M${(c+1)*SCEL},${r*SCEL} v${SCEL}`;
+      if (r < SH-1 && fin.lab[i] !== fin.lab[i+SW]) b += `M${c*SCEL},${(r+1)*SCEL} h${SCEL}`; }
+    h += `<path d="${b}" stroke="#facc15" stroke-width="2.4" fill="none" stroke-linecap="square"/>`;
+  }
+  h += `<rect width="${SW*SCEL}" height="${SH*SCEL}" fill="none" stroke="#475569"/>`;
+  document.getElementById("segResG").innerHTML = h;
+  document.getElementById("segResTit").textContent = tit;
+  document.getElementById("segStats").textContent =
+    `${segK} familias → ${cl.n} grupitos → ${fin.n} objetos  (minSegmentSize=${segMin})`;
+  let m;
+  if (segStep === 1) {
+    const propia = segSobrevive({ lab: cl.lab }, SEGPRESA);
+    m = "Sin geografía: cada píxel cae solo, por su firma. Mira la ciudad: sal y pimienta. " +
+        (propia ? "La presita sí se distinguió: el agua tiene firma propia."
+                : "Ojo: con tan pocas familias, la presita NO se distinguió del campo — sube numClusters.");
+  } else if (segStep === 2) {
+    m = `Los vecinos de la misma familia ya se unieron: ${cl.n} grupitos. La geografía entró — pero quedó confeti de fragmentos diminutos que no son objetos reales. El paso ③ los disuelve.`;
+  } else {
+    // diagnóstico honesto: ¿quién mató al objeto chico, el paso ① o el paso ③?
+    const diag = (cs, nombre, contexto) => {
+      if (segSobrevive(fin, cs)) return `✓ ${nombre} (4 px) sobrevivió como objeto. `;
+      const aislado = segSobrevive({ lab: cl.lab }, cs);
+      return aislado
+        ? `⚠ ${nombre} desapareció en el paso ③: minSegmentSize=${segMin} es más grande que sus 4 px. `
+        : `⚠ ${nombre} nunca se separó ${contexto}: su firma no consiguió familia propia en el paso ① (sube numClusters). `;
+    };
+    m = `${fin.n} objetos finales. ` + diag(SEGPRESA, "la presita", "del campo")
+        + diag(SEGPARQUE, "el parque", "de la ciudad")
+        + "Esa es TU decisión en el taller: ¿qué tamaño tiene el objeto más chico que te importa?";
+  }
+  document.getElementById("segMoraleja").textContent = m;
+  [[3,"sK3"],[5,"sK5"],[8,"sK8"]].forEach(([v,id]) =>
+    document.getElementById(id).classList.toggle("on", segK === v));
+  [[1,"sM1"],[4,"sM4"],[10,"sM10"]].forEach(([v,id]) =>
+    document.getElementById(id).classList.toggle("on", segMin === v));
+  [[1,"sP1"],[2,"sP2"],[3,"sP3"]].forEach(([v,id]) =>
+    document.getElementById(id).classList.toggle("on", segStep === v));
+}
+function segSet(k, m, st) {
+  if (k) segK = k; if (m) segMin = m; if (st) segStep = st;
+  if (m && !st) segStep = 3;   // mover minSegmentSize te lleva a ver su efecto (objetos)
+  segRender();
+}
+function segPlay() {
+  segSet(null, null, 1);
+  setTimeout(() => segSet(null, null, 2), 1500);
+  setTimeout(() => segSet(null, null, 3), 3000);
+}
+function segInit() { segPintaImg(); segRender(); }
 // ---------- figura 7: entrenar ----------
 let training = false;
 function entrenar() {
@@ -749,6 +911,6 @@ function runNb() {
   }, 2200);
 }
 // init
-buildBarras(); firma("agua"); buildRuido(); segdetalle(true);
+buildBarras(); firma("agua"); segInit();
 </script>
 </body></html>
