@@ -1,0 +1,23 @@
+TALLER OFFLINE - Machine Learning para detectar zonas urbanas
+Curso de Analisis de Imagenes Satelitales - Dr. Abel Coronado
+===============================================================
+
+PARA EL ALUMNO (2 pasos):
+  1. Doble clic en  Iniciar_Taller.bat
+  2. Se abre tu navegador con el taller. Listo. No necesitas internet.
+  Para terminar: cierra la ventanita negra del servidor.
+
+PARA EL AREA DE TI / CIBERSEGURIDAD:
+  * Aqui NO hay binarios de terceros. Lo unico que se ejecuta es
+    powershell.exe (firmado por Microsoft, incluido en Windows) corriendo
+    el script  servir_taller.ps1  -- 90 lineas de texto auditable.
+  * El servidor escucha SOLO en 127.0.0.1 (loopback): nada entra ni sale
+    de la red. Solo responde lecturas (GET) de archivos de la carpeta
+    sitio\. No escribe, no ejecuta, no sube nada.
+  * Sin privilegios de administrador, sin reglas de firewall, sin tocar
+    el registro. Borrar esta carpeta elimina todo.
+  * El contenido de sitio\ es un sitio estatico (JupyterLite + Pyodide):
+    Python cientifico compilado a WebAssembly que corre DENTRO del
+    navegador, en su caja de arena estandar.
+  * Cadena de verificacion completa del proyecto:
+    https://github.com/abxda/portable-satelital/blob/main/VERIFICACION.md
