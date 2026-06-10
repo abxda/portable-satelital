@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Teoría — ML para detectar zonas urbanas · Curso de Imágenes Satelitales</title>
+<style>
+  :root{--bg:#0e1726;--panel:#16223a;--panel2:#1c2b49;--text:#e8eefb;--dim:#93a4c3;
+        --cy:#38bdf8;--in:#818cf8;--ok:#34d399;--wa:#fbbf24;--ro:#fb7185;--line:#27395e;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,sans-serif;
+       font-size:17px;line-height:1.75}
+  .wrap{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  a{color:var(--cy);text-decoration:none} a:hover{text-decoration:underline}
+  .crumb{font-size:13px;color:var(--dim);margin-bottom:18px}
+  h1{font-size:34px;line-height:1.25;margin:6px 0 10px}
+  .sub{color:var(--dim);font-size:16px;margin-bottom:8px}
+  .cell{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+        padding:26px 30px;margin:22px 0;position:relative}
+  .cell.md{}
+  .cell.fig{padding:18px 18px 10px;background:#101c31}
+  .gut{position:absolute;left:-8px;top:18px;transform:translateX(-100%);
+       color:var(--dim);font:12px Consolas,monospace;white-space:nowrap}
+  h2{font-size:24px;margin:0 0 12px;color:#fff}
+  h2 .n{color:var(--cy);font-weight:800;margin-right:8px}
+  p{margin:10px 0;color:#cdd9f0}
+  p b,li b{color:#fff}
+  ul,ol{margin:10px 0 10px 26px;color:#cdd9f0}
+  li{margin:6px 0}
+  .hint{border-left:3px solid var(--cy);background:rgba(56,189,248,.07);
+        padding:10px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:15.5px}
+  .quote{border-left:3px solid var(--wa);background:rgba(251,191,36,.06);
+        padding:10px 16px;border-radius:0 10px 10px 0;margin:14px 0;font-size:15.5px;font-style:italic}
+  figcaption{color:var(--dim);font-size:13.5px;text-align:center;padding:10px 8px 8px}
+  svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  code{background:var(--panel2);border:1px solid var(--line);border-radius:6px;
+       padding:1px 7px;font:14.5px Consolas,monospace;color:#bfe3ff}
+  table{border-collapse:collapse;margin:12px 0;font-size:15px}
+  td,th{border:1px solid var(--line);padding:6px 12px} th{background:var(--panel2)}
+  .cta{display:flex;gap:14px;flex-wrap:wrap;margin-top:18px}
+  .btn{display:inline-block;padding:13px 26px;border-radius:12px;font-weight:700;
+       background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff}
+  .btn.ghost{background:var(--panel2);border:1px solid var(--line)}
+  footer{color:var(--dim);font-size:13px;text-align:center;margin-top:46px;line-height:1.7}
+  @media (max-width:760px){.gut{display:none}.cell{padding:20px 18px}}
+</style>
+</head>
+<body><div class="wrap">
+
+<div class="crumb"><a href="./index.html">⟵ Portada del curso</a></div>
+<h1>🛰️ Machine Learning para detectar zonas urbanas</h1>
+<div class="sub">La teoría del ejercicio, desde cero — percepción remota, geomediana, objetos, aprendizaje automático y la plataforma que lo corre todo en tu navegador.</div>
+<div class="sub" style="font-size:13.5px">Basado en el artículo de <b>Abel Alejandro Coronado Iruegas, Ph.D.</b> (2023) · edición interactiva del curso</div>
+
+<!-- ════════════════ 1 · PERCEPCIÓN REMOTA ════════════════ -->
+<div class="cell md"><span class="gut">[teoría 1]</span>
+<h2><span class="n">1</span>¿Cómo "ve" un satélite?</h2>
+<p>Todo lo que hay en la superficie terrestre — un maizal, un techo de lámina, una presa — <b>refleja la luz del Sol de manera distinta</b>. La <b>percepción remota</b> consiste en medir esa luz reflejada desde el espacio, sin tocar el territorio.</p>
+<p>Usaremos datos de <b>Sentinel-2</b>, la misión del programa europeo Copernicus: dos satélites que fotografían toda la Tierra cada ~5 días, con píxeles de 10×10 metros, y cuyos datos son <b>públicos y gratuitos</b>. Cada pasada registra cuánta luz regresa en distintas "rebanadas" del espectro — los colores que vemos y varios infrarrojos que no.</p>
+</div>
+<div class="cell fig"><span class="gut">[figura 1]</span>
+<svg viewBox="0 0 760 380" role="img" aria-label="Satélite barriendo el territorio">
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#0b1322"/><stop offset="1" stop-color="#101c31"/>
+  </linearGradient>
+  <g id="tile"><path d="M0,0 L34,-17 L68,0 L34,17 Z"/></g>
+</defs>
+<rect width="760" height="380" fill="url(#sky)"/>
+<!-- estrellas -->
+<g fill="#7dd3fc" opacity=".5">
+  <circle cx="60" cy="40" r="1.6"><animate attributeName="opacity" values=".2;1;.2" dur="3s" repeatCount="indefinite"/></circle>
+  <circle cx="700" cy="60" r="1.4"><animate attributeName="opacity" values="1;.2;1" dur="4s" repeatCount="indefinite"/></circle>
+  <circle cx="540" cy="30" r="1.2"><animate attributeName="opacity" values=".3;1;.3" dur="2.6s" repeatCount="indefinite"/></circle>
+</g>
+<!-- terreno isométrico -->
+<g transform="translate(120,260)">
+  <g>
+    <!-- campos -->
+    <use href="#tile" x="0"   y="0"  fill="#365314"/><use href="#tile" x="68"  y="34" fill="#4d7c0f"/>
+    <use href="#tile" x="136" y="0"  fill="#3f6212" transform="translate(0,68)"/>
+    <use href="#tile" x="34"  y="17" fill="#65a30d"/><use href="#tile" x="102" y="51" fill="#365314"/>
+    <use href="#tile" x="170" y="17" fill="#4d7c0f" transform="translate(0,34)"/>
+    <use href="#tile" x="68"  y="0"  fill="#a16207" transform="translate(0,-34) translate(68,68)"/>
+    <!-- ciudad -->
+    <use href="#tile" x="204" y="0"  fill="#475569"/><use href="#tile" x="272" y="34" fill="#64748b"/>
+    <use href="#tile" x="238" y="17" fill="#94a3b8"/><use href="#tile" x="306" y="51" fill="#475569"/>
+    <use href="#tile" x="340" y="34" fill="#64748b" transform="translate(0,-34) translate(0,34)"/>
+    <use href="#tile" x="272" y="0"  fill="#334155" transform="translate(0,68)"/>
+    <!-- edificios -->
+    <g fill="#94a3b8" stroke="#1e293b" stroke-width="1">
+      <path d="M252,4 l16,-8 v-26 l-16,8 Z" fill="#cbd5e1"/><path d="M252,4 l-16,-8 v-26 l16,8 Z" fill="#64748b"/><path d="M252,-30 l-16,-8 16,-8 16,8 Z" fill="#e2e8f0"/>
+      <path d="M308,38 l13,-7 v-20 l-13,7 Z" fill="#cbd5e1"/><path d="M308,38 l-13,-7 v-20 l13,7 Z" fill="#64748b"/><path d="M308,11 l-13,-7 13,-6 13,6 Z" fill="#e2e8f0"/>
+    </g>
+    <!-- agua -->
+    <use href="#tile" x="0" y="34" fill="#0e7490">
+      <animate attributeName="fill" values="#0e7490;#0891b2;#0e7490" dur="4s" repeatCount="indefinite"/>
+    </use>
+  </g>
+</g>
+<!-- haz de barrido -->
+<g>
+  <polygon points="0,0 -52,210 52,210" fill="#38bdf8" opacity=".14">
+    <animateTransform attributeName="transform" type="translate" values="220,66; 480,66; 220,66" dur="8s" repeatCount="indefinite"/>
+  </polygon>
+</g>
+<!-- fotones subiendo -->
+<g fill="#fbbf24">
+  <circle r="3"><animateMotion path="M 300 250 L 330 90" dur="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="1.6s" repeatCount="indefinite"/></circle>
+  <circle r="3"><animateMotion path="M 420 260 L 400 95" dur="1.9s" begin=".5s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="1.9s" begin=".5s" repeatCount="indefinite"/></circle>
+</g>
+<!-- satélite -->
+<g>
+  <animateTransform attributeName="transform" type="translate" values="220,66; 480,66; 220,66" dur="8s" repeatCount="indefinite"/>
+  <g transform="rotate(-12)">
+    <rect x="-46" y="-7" width="30" height="16" rx="2" fill="#1d4ed8" stroke="#60a5fa"/>
+    <rect x="16"  y="-7" width="30" height="16" rx="2" fill="#1d4ed8" stroke="#60a5fa"/>
+    <line x1="-16" y1="1" x2="16" y2="1" stroke="#94a3b8" stroke-width="3"/>
+    <rect x="-12" y="-12" width="24" height="24" rx="4" fill="#e2e8f0" stroke="#94a3b8"/>
+    <circle cx="0" cy="22" r="5" fill="#38bdf8"><animate attributeName="opacity" values="1;.3;1" dur="1s" repeatCount="indefinite"/></circle>
+  </g>
+</g>
+<text x="380" y="358" text-anchor="middle" fill="#93a4c3" font-size="13">Sentinel-2: mide la luz que el territorio refleja, franja por franja, cada ~5 días</text>
+</svg>
+<figcaption>El satélite no toma "fotos": <b>mide energía reflejada</b> en cada pedacito de 10×10 m del territorio.</figcaption>
+</div>
+
+<!-- ════════════════ 2 · EL PÍXEL DE 12 BANDAS ════════════════ -->
+<div class="cell md"><span class="gut">[teoría 2]</span>
+<h2><span class="n">2</span>El píxel no es un color: es un vector de 12 números</h2>
+<p>Nuestros ojos ven tres bandas (rojo, verde, azul). Sentinel-2 registra <b>12 bandas espectrales</b>: aerosol costero, azul, verde, rojo, tres bordes rojos de la vegetación, infrarrojo cercano (NIR), infrarrojo estrecho, vapor de agua y dos infrarrojos de onda corta (SWIR).</p>
+<p>¿Por qué importa? Porque en el infrarrojo <b>la vegetación brilla intensamente</b>, el agua se ve casi negra y el concreto se separa del suelo desnudo. Cosas que se confunden a simple vista se distinguen perfectamente cuando miras las 12 mediciones a la vez. Cada píxel de nuestra imagen es, en realidad, una <b>columna de 12 números</b>.</p>
+</div>
+<div class="cell fig"><span class="gut">[figura 2]</span>
+<svg viewBox="0 0 760 400" role="img" aria-label="El píxel multibanda">
+<rect width="760" height="400" fill="#101c31"/>
+<defs><g id="layer"><path d="M0,0 L120,-60 L240,0 L120,60 Z"/></g></defs>
+<!-- pila isométrica de 12 bandas -->
+<g transform="translate(120,330)">
+  <g id="bandstack">
+    <!-- de abajo (b12) hacia arriba (b1) -->
+    <g><use href="#layer" fill="#7f1d1d" opacity=".95"/><animateTransform attributeName="transform" type="translate" values="0,0;0,0;0,0" dur="6s" repeatCount="indefinite"/></g>
+  </g>
+  <!-- generamos capas con desplazamientos animados -->
+  <g>
+    <use href="#layer" y="0"    fill="#7f1d1d"><animate attributeName="y" values="0;0;0" dur="6s" repeatCount="indefinite"/></use>
+    <use href="#layer" fill="#9a3412"><animateTransform attributeName="transform" type="translate" values="0,-18;0,-26;0,-18" dur="6s" repeatCount="indefinite"/></use>
+    <use href="#layer" fill="#b45309"><animateTransform attributeName="transform" type="translate" values="0,-36;0,-52;0,-36" dur="6s" repeatCount="indefinite"/></use>
+    <use href="#layer" fill="#a16207"><animateTransform attributeName="transform" type="translate" values="0,-54;0,-78;0,-54" dur="6s" repeatCount="indefinite"/></use>
+    <use href="#layer" fill="#4d7c0f"><animateTransform attributeName="transform" type="translate" values="0,-72;0,-104;0,-72" dur="6s" repeatCount="indefinite"/></use>
+    <use href="#layer" fill="#15803d"><animateTransform attributeName="transform" type="translate" values="0,-90;0,-130;0,-90" dur="6s" repeatCount="indefinite"/></use>
+    <use href="#layer" fill="#0f766e"><animateTransform attributeName="transform" type="translate" values="0,-108;0,-156;0,-108" dur="6s" repeatCount="indefinite"/></use>
+    <use href="#layer" fill="#0e7490"><animateTransform attributeName="transform" type="translate" values="0,-126;0,-182;0,-126" dur="6s" repeatCount="indefinite"/></use>
+    <use href="#layer" fill="#1d4ed8"><animateTransform attributeName="transform" type="translate" values="0,-144;0,-208;0,-144" dur="6s" repeatCount="indefinite"/></use>
+    <use href="#layer" fill="#4338ca"><animateTransform attributeName="transform" type="translate" values="0,-162;0,-234;0,-162" dur="6s" repeatCount="indefinite"/></use>
+    <use href="#layer" fill="#6d28d9"><animateTransform attributeName="transform" type="translate" values="0,-180;0,-260;0,-180" dur="6s" repeatCount="indefinite"/></use>
+    <use href="#layer" fill="#9333ea"><animateTransform attributeName="transform" type="translate" values="0,-198;0,-286;0,-198" dur="6s" repeatCount="indefinite"/></use>
+  </g>
+  <!-- sonda del píxel -->
+  <line x1="120" y1="-330" x2="120" y2="40" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="6 5">
+    <animate attributeName="stroke-dashoffset" values="0;-44" dur="1.4s" repeatCount="indefinite"/>
+  </line>
+  <text x="120" y="-338" text-anchor="middle" fill="#fbbf24" font-size="13" font-weight="700">un píxel (10 m × 10 m)</text>
+</g>
+<!-- vector de salida -->
+<g transform="translate(470,60)" font-family="Consolas,monospace" font-size="13">
+  <text x="0" y="-14" fill="#e8eefb" font-weight="700" font-family="Segoe UI">… se convierte en 12 mediciones:</text>
+  <g fill="#93a4c3">
+    <!-- barras -->
+    <g>
+      <rect x="58" y="4"   height="10" fill="#9333ea" width="40"><animate attributeName="width" values="0;40" dur="1s" begin="0s" fill="freeze"/></rect>
+      <rect x="58" y="26"  height="10" fill="#6d28d9" width="56"><animate attributeName="width" values="0;56" dur="1s" begin=".15s" fill="freeze"/></rect>
+      <rect x="58" y="48"  height="10" fill="#4338ca" width="72"><animate attributeName="width" values="0;72" dur="1s" begin=".3s" fill="freeze"/></rect>
+      <rect x="58" y="70"  height="10" fill="#1d4ed8" width="64"><animate attributeName="width" values="0;64" dur="1s" begin=".45s" fill="freeze"/></rect>
+      <rect x="58" y="92"  height="10" fill="#0e7490" width="96"><animate attributeName="width" values="0;96" dur="1s" begin=".6s" fill="freeze"/></rect>
+      <rect x="58" y="114" height="10" fill="#0f766e" width="120"><animate attributeName="width" values="0;120" dur="1s" begin=".75s" fill="freeze"/></rect>
+      <rect x="58" y="136" height="10" fill="#15803d" width="170"><animate attributeName="width" values="0;170" dur="1s" begin=".9s" fill="freeze"/></rect>
+      <rect x="58" y="158" height="10" fill="#4d7c0f" width="185"><animate attributeName="width" values="0;185" dur="1s" begin="1.05s" fill="freeze"/></rect>
+      <rect x="58" y="180" height="10" fill="#a16207" width="110"><animate attributeName="width" values="0;110" dur="1s" begin="1.2s" fill="freeze"/></rect>
+      <rect x="58" y="202" height="10" fill="#b45309" width="88"><animate attributeName="width" values="0;88" dur="1s" begin="1.35s" fill="freeze"/></rect>
+      <rect x="58" y="224" height="10" fill="#9a3412" width="132"><animate attributeName="width" values="0;132" dur="1s" begin="1.5s" fill="freeze"/></rect>
+      <rect x="58" y="246" height="10" fill="#7f1d1d" width="142"><animate attributeName="width" values="0;142" dur="1s" begin="1.65s" fill="freeze"/></rect>
+    </g>
+    <text x="0" y="13">b1</text><text x="0" y="35">b2</text><text x="0" y="57">b3</text>
+    <text x="0" y="79">b4</text><text x="0" y="101">b5</text><text x="0" y="123">b6</text>
+    <text x="0" y="145">b7</text><text x="0" y="167">b8 ←NIR</text><text x="0" y="189">b9</text>
+    <text x="0" y="211">b10</text><text x="0" y="233">b11</text><text x="0" y="255">b12</text>
+  </g>
+  <text x="0" y="290" fill="#34d399" font-family="Segoe UI" font-size="13.5">la vegetación "grita" en el NIR (b8) 🌿</text>
+</g>
+</svg>
+<figcaption>Las 12 capas se separan para mostrar que <b>cada píxel atraviesa todas las bandas</b>: su firma espectral.</figcaption>
+</div>
+
+<!-- ════════════════ 3 · GEOMEDIANA ════════════════ -->
+<div class="cell md"><span class="gut">[teoría 3]</span>
+<h2><span class="n">3</span>La geomediana: un año de imágenes en una sola, sin nubes</h2>
+<p>Un problema real: el día que pasa el satélite puede haber <b>nubes, sombras o bruma</b>. La solución del ejercicio: tomar <b>todas las pasadas de un año</b> (2,815 imágenes de Aguascalientes entre 2017 y 2021, procesadas con Open Data Cube) y resumirlas con la <b>mediana geométrica</b> — la <i>geomediana</i> (Roberts et al., 2017).</p>
+<div class="quote">La geomediana de cada píxel es el punto del espacio espectral que <b>minimiza la distancia a todas las observaciones del año</b>. A diferencia del promedio, no se deja arrastrar por valores atípicos — una nube no la contamina.</div>
+<p>El resultado: una imagen <b>limpia y representativa del año completo</b>, con sus 12 bandas coherentes entre sí. Es la <code>GM_AGS_2020.tif</code> que usamos en el taller (<a href="https://doi.org/10.5281/zenodo.6908357" target="_blank">Coronado et al., 2022 — datos abiertos en Zenodo</a>).</p>
+</div>
+<div class="cell fig"><span class="gut">[figura 3]</span>
+<svg viewBox="0 0 760 360" role="img" aria-label="Geomediana">
+<rect width="760" height="360" fill="#101c31"/>
+<!-- IZQUIERDA: pila de tomas con nubes que colapsan -->
+<g transform="translate(40,40)">
+  <text x="130" y="-8" text-anchor="middle" fill="#e8eefb" font-size="14" font-weight="700">365 días de tomas…</text>
+  <g>
+    <g opacity=".9">
+      <rect x="0" y="0" width="200" height="120" rx="8" fill="#3f6212"/>
+      <ellipse cx="60" cy="40" rx="34" ry="14" fill="#e2e8f0" opacity=".95"/>
+      <ellipse cx="150" cy="80" rx="26" ry="11" fill="#cbd5e1" opacity=".9"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0; 30,60; 30,60; 0,0" keyTimes="0;.45;.7;1" dur="7s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".9;.0;.0;.9" keyTimes="0;.45;.7;1" dur="7s" repeatCount="indefinite"/>
+    </g>
+    <g opacity=".9">
+      <rect x="15" y="30" width="200" height="120" rx="8" fill="#4d7c0f"/>
+      <ellipse cx="120" cy="70" rx="40" ry="16" fill="#f1f5f9" opacity=".95"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0; 15,30; 15,30; 0,0" keyTimes="0;.45;.7;1" dur="7s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values=".9;.0;.0;.9" keyTimes="0;.45;.7;1" dur="7s" repeatCount="indefinite"/>
+    </g>
+    <!-- resultado -->
+    <g>
+      <rect x="30" y="60" width="200" height="120" rx="8" fill="#65a30d" stroke="#34d399" stroke-width="0">
+        <animate attributeName="stroke-width" values="0;0;3;3;0" keyTimes="0;.4;.5;.85;1" dur="7s" repeatCount="indefinite"/>
+      </rect>
+      <rect x="46" y="76" width="60" height="40" rx="3" fill="#4d7c0f"/>
+      <rect x="120" y="76" width="92" height="24" rx="3" fill="#a16207"/>
+      <rect x="46" y="126" width="166" height="38" rx="3" fill="#365314"/>
+      <rect x="120" y="108" width="40" height="10" rx="2" fill="#64748b"/>
+    </g>
+    <text x="130" y="212" text-anchor="middle" fill="#34d399" font-size="13.5">… una imagen limpia del año ✓</text>
+  </g>
+</g>
+<!-- DERECHA: mediana geométrica vs promedio (figura del artículo) -->
+<g transform="translate(420,30)">
+  <text x="150" y="2" text-anchor="middle" fill="#e8eefb" font-size="14" font-weight="700">¿por qué "geo-mediana"?</text>
+  <rect x="0" y="14" width="300" height="240" rx="10" fill="#0b1322" stroke="#27395e"/>
+  <!-- observaciones del año -->
+  <g fill="#7dd3fc">
+    <circle cx="70" cy="80" r="5"/><circle cx="105" cy="60" r="5"/><circle cx="135" cy="95" r="5"/>
+    <circle cx="95" cy="130" r="5"/><circle cx="150" cy="140" r="5"/><circle cx="120" cy="170" r="5"/>
+    <circle cx="80" cy="180" r="5"/>
+    <!-- outlier: la nube -->
+    <g><circle cx="255" cy="50" r="7" fill="#f1f5f9"/><text x="255" y="36" text-anchor="middle" fill="#cbd5e1" font-size="11">☁ nube</text></g>
+  </g>
+  <!-- centro de masa (azul) arrastrado por el outlier -->
+  <circle cx="139" cy="113" r="7" fill="#3b82f6" stroke="#bfdbfe" stroke-width="2">
+    <animate attributeName="r" values="7;9;7" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+  <text x="160" y="100" fill="#93c5fd" font-size="11.5">promedio (se jala hacia la nube)</text>
+  <!-- geomediana (amarillo) firme en el centro -->
+  <circle cx="107" cy="122" r="7" fill="#fbbf24" stroke="#fde68a" stroke-width="2">
+    <animate attributeName="r" values="7;10;7" dur="2.5s" begin="1.2s" repeatCount="indefinite"/>
+  </circle>
+  <text x="36" y="152" fill="#fde68a" font-size="11.5">geomediana ✓</text>
+  <!-- líneas de distancia animadas -->
+  <g stroke="#fbbf24" stroke-width="1" opacity=".5">
+    <line x1="107" y1="122" x2="70" y2="80"><animate attributeName="opacity" values="0;.7;0" dur="3s" repeatCount="indefinite"/></line>
+    <line x1="107" y1="122" x2="150" y2="140"><animate attributeName="opacity" values="0;.7;0" dur="3s" begin=".5s" repeatCount="indefinite"/></line>
+    <line x1="107" y1="122" x2="120" y2="170"><animate attributeName="opacity" values="0;.7;0" dur="3s" begin="1s" repeatCount="indefinite"/></line>
+  </g>
+  <text x="150" y="276" text-anchor="middle" fill="#93a4c3" font-size="12.5">la mediana geométrica resiste los valores atípicos</text>
+</g>
+</svg>
+<figcaption>Izquierda: el año entero colapsa en una imagen limpia. Derecha: la idea matemática — inspirada en la figura original del artículo.</figcaption>
+</div>
+
+<!-- ════════════════ 4 · SEGMENTACIÓN ════════════════ -->
+<div class="cell md"><span class="gut">[teoría 4]</span>
+<h2><span class="n">4</span>Del píxel al objeto: la segmentación</h2>
+<p>Clasificar píxel por píxel produce mapas "de sal y pimienta": píxeles sueltos mal clasificados y sin contexto. El enfoque profesional (<b>GEOBIA</b>, análisis orientado a objetos) agrupa primero los píxeles en <b>segmentos</b>: regiones contiguas y espectralmente homogéneas que corresponden a cosas reales — una parcela, una manzana, un cuerpo de agua.</p>
+<p>El artículo original usaba una cuadrícula fija de 100×100 m como "objetos". En la versión actual del curso damos el salto a la <b>segmentación de Shepherd</b> (Shepherd, Bunting &amp; Dymond, 2019): siembra espectral con K-means, aglomerado de vecinos y eliminación iterativa de grupos pequeños — objetos con <b>fronteras reales</b>, no celdas arbitrarias.</p>
+<div class="hint">💡 En el taller usarás <code>shepherd-wasm</code>: nuestra implementación de este algoritmo, validada <b>bit a bit</b> contra la referencia y capaz de correr en tu navegador.</div>
+</div>
+<div class="cell fig"><span class="gut">[figura 4]</span>
+<svg viewBox="0 0 760 350" role="img" aria-label="Segmentación: de píxeles a objetos">
+<rect width="760" height="350" fill="#101c31"/>
+<defs><g id="px"><path d="M0,0 L16,-8 L32,0 L16,8 Z"/></g></defs>
+<text x="200" y="34" text-anchor="middle" fill="#e8eefb" font-size="14" font-weight="700">píxeles (ruidosos)</text>
+<text x="560" y="34" text-anchor="middle" fill="#e8eefb" font-size="14" font-weight="700">objetos (con sentido)</text>
+<!-- malla ruidosa -->
+<g transform="translate(110,160)">
+  <g>
+    <animate attributeName="opacity" values="1;1;.25;.25;1" keyTimes="0;.4;.55;.85;1" dur="8s" repeatCount="indefinite"/>
+    <use href="#px" x="0" y="0" fill="#65a30d"/><use href="#px" x="16" y="8" fill="#4d7c0f"/><use href="#px" x="32" y="0" fill="#84cc16"/><use href="#px" x="-16" y="8" fill="#65a30d"/>
+    <use href="#px" x="48" y="8" fill="#a16207"/><use href="#px" x="64" y="0" fill="#ca8a04"/><use href="#px" x="80" y="8" fill="#a16207"/><use href="#px" x="64" y="16" fill="#eab308"/>
+    <use href="#px" x="0" y="16" fill="#4d7c0f"/><use href="#px" x="32" y="16" fill="#65a30d"/><use href="#px" x="16" y="24" fill="#84cc16"/><use href="#px" x="48" y="24" fill="#ca8a04"/>
+    <use href="#px" x="-32" y="16" fill="#0e7490"/><use href="#px" x="-16" y="24" fill="#0891b2"/><use href="#px" x="0" y="32" fill="#0e7490"/><use href="#px" x="16" y="40" fill="#22d3ee"/>
+    <use href="#px" x="32" y="32" fill="#475569"/><use href="#px" x="48" y="40" fill="#64748b"/><use href="#px" x="64" y="32" fill="#94a3b8"/><use href="#px" x="80" y="40" fill="#475569"/>
+    <!-- ruido sal-pimienta parpadeando -->
+    <use href="#px" x="16" y="8" fill="#eab308"><animate attributeName="opacity" values="0;1;0" dur="1.1s" repeatCount="indefinite"/></use>
+    <use href="#px" x="32" y="32" fill="#84cc16"><animate attributeName="opacity" values="1;0;1" dur="1.3s" repeatCount="indefinite"/></use>
+  </g>
+</g>
+<!-- flecha -->
+<g transform="translate(345,165)">
+  <path d="M0,0 h60" stroke="#38bdf8" stroke-width="4" marker-end="url(#arr)"/>
+  <defs><marker id="arr" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#38bdf8"/></marker></defs>
+  <text x="30" y="-12" text-anchor="middle" fill="#38bdf8" font-size="12.5">Shepherd</text>
+  <text x="30" y="24" text-anchor="middle" fill="#93a4c3" font-size="11">3 pasos</text>
+</g>
+<!-- objetos limpios con fronteras que se dibujan -->
+<g transform="translate(470,150)">
+  <g stroke="#fde047" stroke-width="2.5" fill-opacity=".92">
+    <path d="M0,0 L48,-24 L96,0 L48,24 Z" fill="#65a30d" stroke-dasharray="280" stroke-dashoffset="280">
+      <animate attributeName="stroke-dashoffset" values="280;0" dur="2.2s" repeatCount="indefinite"/>
+    </path>
+    <path d="M96,0 L144,-24 L192,0 L144,24 Z" fill="#ca8a04" stroke-dasharray="280" stroke-dashoffset="280">
+      <animate attributeName="stroke-dashoffset" values="280;0" dur="2.2s" begin=".4s" repeatCount="indefinite"/>
+    </path>
+    <path d="M0,0 L48,24 L96,48 L48,72 L-48,24 Z" fill="#0e7490" stroke-dasharray="420" stroke-dashoffset="420">
+      <animate attributeName="stroke-dashoffset" values="420;0" dur="2.6s" begin=".8s" repeatCount="indefinite"/>
+    </path>
+    <path d="M96,48 L144,24 L192,48 L144,72 Z" fill="#64748b" stroke-dasharray="280" stroke-dashoffset="280">
+      <animate attributeName="stroke-dashoffset" values="280;0" dur="2.2s" begin="1.2s" repeatCount="indefinite"/>
+    </path>
+  </g>
+  <text x="72" y="110" text-anchor="middle" fill="#93a4c3" font-size="12.5">parcela · cultivo · presa · manzana</text>
+</g>
+<text x="380" y="330" text-anchor="middle" fill="#93a4c3" font-size="13">cada objeto agrupa píxeles vecinos y parecidos — y hereda una frontera real del territorio</text>
+</svg>
+<figcaption>El paso de <b>píxeles ruidosos</b> a <b>objetos con fronteras</b> es lo que hace robusta la clasificación.</figcaption>
+</div>
+
+<!-- ════════════════ 5 · ETIQUETAS ════════════════ -->
+<div class="cell md"><span class="gut">[teoría 5]</span>
+<h2><span class="n">5</span>La verdad-terreno: etiquetas oficiales de INEGI</h2>
+<p>Para que una máquina aprenda "qué es urbano" necesita <b>ejemplos confiables</b>. Aquí entra un tesoro nacional: el <b>Marco Geoestadístico del Censo de Población y Vivienda 2020</b>, con los <b>Polígonos de Localidades Urbanas y Rurales Amanzanadas</b> de todo México.</p>
+<p>Detalle fino del artículo original: las localidades <i>rurales amanzanadas</i> no alcanzan la población para ser "urbanas", pero <b>su estructura de manzanas es idéntica vista desde el satélite</b> — por eso ambas se unifican en una sola clase <b>URBANA (1)</b>; todo lo demás es <b>NO URBANA (2)</b>.</p>
+</div>
+<div class="cell fig"><span class="gut">[figura 5]</span>
+<svg viewBox="0 0 760 330" role="img" aria-label="Etiquetas del Marco Geoestadístico">
+<rect width="760" height="330" fill="#101c31"/>
+<!-- imagen base -->
+<g transform="translate(230,180)">
+  <path d="M0,0 L150,-75 L300,0 L150,75 Z" fill="#3f6212"/>
+  <path d="M75,-37 L150,-75 L300,0 L225,37 Z" fill="#4d7c0f" opacity=".7"/>
+  <!-- mancha urbana -->
+  <path d="M150,-20 L215,-52 L285,-18 L222,15 Z" fill="#64748b"/>
+  <!-- polígono INEGI cayendo -->
+  <g>
+    <path d="M150,-20 L215,-52 L285,-18 L222,15 Z" fill="none" stroke="#fb7185" stroke-width="3">
+      <animateTransform attributeName="transform" type="translate" values="0,-120;0,0;0,0;0,-120" keyTimes="0;.25;.8;1" dur="6s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.25;.8;1" dur="6s" repeatCount="indefinite"/>
+    </path>
+    <text x="250" y="-70" fill="#fb7185" font-size="12.5" font-weight="700">polígono de localidad (INEGI)
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.25;.8;1" dur="6s" repeatCount="indefinite"/>
+    </text>
+  </g>
+  <!-- etiquetas que aparecen -->
+  <g font-size="17" font-weight="800" text-anchor="middle">
+    <text x="218" y="-15" fill="#fecdd3">1<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.3;.45;.8;1" dur="6s" repeatCount="indefinite"/></text>
+    <text x="80" y="5" fill="#bbf7d0">2<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.3;.5;.8;1" dur="6s" repeatCount="indefinite"/></text>
+    <text x="150" y="45" fill="#bbf7d0">2<animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;.3;.55;.8;1" dur="6s" repeatCount="indefinite"/></text>
+  </g>
+</g>
+<g transform="translate(60,60)" font-size="13.5" fill="#cdd9f0">
+  <rect x="-12" y="-22" width="190" height="92" rx="10" fill="#16223a" stroke="#27395e"/>
+  <circle cx="6" cy="0" r="7" fill="#fb7185"/><text x="22" y="4">1 = URBANA (incluye rural amanzanada)</text>
+  <circle cx="6" cy="32" r="7" fill="#34d399"/><text x="22" y="36">2 = NO URBANA</text>
+</g>
+<text x="380" y="312" text-anchor="middle" fill="#93a4c3" font-size="13">el polígono censal "sella" la imagen: cada píxel queda etiquetado 1 o 2 — la verdad-terreno del modelo</text>
+</svg>
+<figcaption>Los polígonos del Censo 2020 se rasterizan sobre la imagen: nace <code>Etiquetas_1_urbano_2_no_urbano.tif</code>.</figcaption>
+</div>
+
+<!-- ════════════════ 6 · DE IMAGEN A TABLA ════════════════ -->
+<div class="cell md"><span class="gut">[teoría 6]</span>
+<h2><span class="n">6</span>De la imagen a la tabla: las características</h2>
+<p>Los algoritmos de aprendizaje no comen imágenes: comen <b>tablas</b>. Por eso, para cada objeto calculamos sus <b>estadísticas zonales</b> — media y desviación estándar de cada una de las 12 bandas — y su proporción de píxeles urbanos según las etiquetas.</p>
+<p>El artículo original lograba esto con la <i>Raster Attribute Table</i> de RSGISLib; hoy lo hacemos con unas líneas de <code>numpy</code> que corren hasta en el navegador. La esencia es la misma: <b>una fila por objeto, una columna por característica</b> — la base de datos del aprendizaje.</p>
+</div>
+<div class="cell fig"><span class="gut">[figura 6]</span>
+<svg viewBox="0 0 760 320" role="img" aria-label="De objetos a tabla">
+<rect width="760" height="320" fill="#101c31"/>
+<!-- objetos -->
+<g transform="translate(80,150)">
+  <path d="M0,0 L48,-24 L96,0 L48,24 Z" fill="#65a30d"/>
+  <path d="M96,0 L144,-24 L192,0 L144,24 Z" fill="#64748b"/>
+  <path d="M48,24 L96,0 L144,24 L96,48 Z" fill="#0e7490"/>
+  <text x="48" y="-30" text-anchor="middle" fill="#a3e635" font-size="11">#17</text>
+  <text x="144" y="-30" text-anchor="middle" fill="#cbd5e1" font-size="11">#18</text>
+  <text x="96" y="66" text-anchor="middle" fill="#67e8f9" font-size="11">#19</text>
+</g>
+<!-- chips volando hacia la tabla -->
+<g>
+  <rect width="26" height="12" rx="3" fill="#65a30d"><animateMotion path="M 160 130 C 280 60, 330 60, 400 96" dur="2.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;1;0" dur="2.4s" repeatCount="indefinite"/></rect>
+  <rect width="26" height="12" rx="3" fill="#64748b"><animateMotion path="M 250 130 C 320 80, 350 90, 400 121" dur="2.4s" begin=".8s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;1;0" dur="2.4s" begin=".8s" repeatCount="indefinite"/></rect>
+  <rect width="26" height="12" rx="3" fill="#0e7490"><animateMotion path="M 200 190 C 300 150, 350 130, 400 146" dur="2.4s" begin="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;1;0" dur="2.4s" begin="1.6s" repeatCount="indefinite"/></rect>
+</g>
+<!-- tabla -->
+<g transform="translate(400,60)" font-family="Consolas,monospace" font-size="12">
+  <rect x="0" y="0" width="320" height="180" rx="8" fill="#0b1322" stroke="#27395e"/>
+  <g fill="#93a4c3">
+    <text x="12" y="22" fill="#e8eefb" font-weight="700">id   b1Mean b8Mean … b12Std  prop_urb</text>
+    <line x1="8" y1="30" x2="312" y2="30" stroke="#27395e"/>
+    <g><text x="12" y="50">#17  1043   3712  …  201      0.04</text><animate attributeName="opacity" values="0;1;1" keyTimes="0;.2;1" dur="2.4s" repeatCount="indefinite"/></g>
+    <g><text x="12" y="75">#18  1561   1893  …  455      0.96</text><animate attributeName="opacity" values="0;0;1;1" keyTimes="0;.33;.53;1" dur="2.4s" repeatCount="indefinite"/></g>
+    <g><text x="12" y="100">#19   721    802  …   88      0.00</text><animate attributeName="opacity" values="0;0;1;1" keyTimes="0;.66;.86;1" dur="2.4s" repeatCount="indefinite"/></g>
+    <text x="12" y="130" fill="#475569">…</text>
+    <text x="12" y="160" fill="#34d399" font-family="Segoe UI">una fila por objeto = lista para sklearn ✓</text>
+  </g>
+</g>
+<text x="380" y="300" text-anchor="middle" fill="#93a4c3" font-size="13">24 características espectrales + la proporción urbana: el alimento del modelo</text>
+</svg>
+<figcaption>Cada objeto del mapa <b>se vuelve una fila</b>: la imagen completa queda convertida en una base de datos.</figcaption>
+</div>
+
+<!-- ════════════════ 7 · MACHINE LEARNING ════════════════ -->
+<div class="cell md"><span class="gut">[teoría 7]</span>
+<h2><span class="n">7</span>Aprendizaje automático: entrenar, y calificar con honestidad</h2>
+<p><b>Aprender</b>, para una máquina, es encontrar patrones en ejemplos etiquetados. Nuestra receta — la misma del artículo:</p>
+<ol>
+<li><b>Depurar:</b> entrenar solo con objetos <i>puros</i> (≥ 90 % de una clase). Ejemplos ambiguos enseñan mal.</li>
+<li><b>Balancear:</b> mismo número de ejemplos urbanos y no urbanos, para no sesgar el modelo.</li>
+<li><b>Separar 70 / 30:</b> el 30 % se guarda bajo llave. El modelo <b>jamás lo ve durante el entrenamiento</b> — es el examen sorpresa que mide la verdad.</li>
+<li><b>Entrenar el pipeline:</b> <code>StandardScaler</code> (pone las 24 características en la misma escala) → <code>MLP</code> (una red neuronal aporta su "opinión" como característica extra — el truco del <i>StackingEstimator</i>) → <code>ExtraTrees</code> (un bosque de árboles aleatorios decide).</li>
+<li><b>Evaluar:</b> la matriz de confusión enfrenta predicciones contra la verdad. En el artículo: <b>~94 % de exactitud</b>; en el taller en tu navegador obtendrás cifras similares.</li>
+</ol>
+</div>
+<div class="cell fig"><span class="gut">[figura 7]</span>
+<svg viewBox="0 0 760 420" role="img" aria-label="Entrenamiento y evaluación">
+<rect width="760" height="420" fill="#101c31"/>
+<!-- split 70/30 -->
+<g transform="translate(40,40)">
+  <text x="100" y="-6" fill="#e8eefb" font-size="13.5" font-weight="700">1· dataset balanceado → 70/30</text>
+  <g>
+    <!-- fichas cayendo a dos cajas -->
+    <rect x="8" y="120" width="100" height="56" rx="8" fill="#16223a" stroke="#38bdf8"/>
+    <rect x="128" y="120" width="64" height="56" rx="8" fill="#16223a" stroke="#fbbf24"/>
+    <text x="58" y="196" text-anchor="middle" fill="#7dd3fc" font-size="12">entrenar 70%</text>
+    <text x="160" y="196" text-anchor="middle" fill="#fde68a" font-size="12">prueba 30% 🔒</text>
+    <g>
+      <circle r="6" fill="#fb7185"><animateMotion path="M 100 10 C 80 60, 60 90, 40 130" dur="1.8s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="1.8s" repeatCount="indefinite"/></circle>
+      <circle r="6" fill="#34d399"><animateMotion path="M 100 10 C 90 60, 80 90, 75 130" dur="1.8s" begin=".6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="1.8s" begin=".6s" repeatCount="indefinite"/></circle>
+      <circle r="6" fill="#fb7185"><animateMotion path="M 100 10 C 120 60, 140 90, 158 130" dur="1.8s" begin="1.2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="1.8s" begin="1.2s" repeatCount="indefinite"/></circle>
+    </g>
+  </g>
+</g>
+<!-- red neuronal -->
+<g transform="translate(300,52)">
+  <text x="85" y="-18" fill="#e8eefb" font-size="13.5" font-weight="700">2· red neuronal (MLP)</text>
+  <g stroke="#475569" stroke-width="1.2">
+    <line x1="20" y1="20" x2="90" y2="0"/><line x1="20" y1="20" x2="90" y2="50"/><line x1="20" y1="20" x2="90" y2="100"/>
+    <line x1="20" y1="75" x2="90" y2="0"/><line x1="20" y1="75" x2="90" y2="50"/><line x1="20" y1="75" x2="90" y2="100"/>
+    <line x1="20" y1="130" x2="90" y2="0"/><line x1="20" y1="130" x2="90" y2="50"/><line x1="20" y1="130" x2="90" y2="100"/>
+    <line x1="90" y1="0" x2="160" y2="40"/><line x1="90" y1="50" x2="160" y2="40"/><line x1="90" y1="100" x2="160" y2="40"/>
+    <line x1="90" y1="0" x2="160" y2="90"/><line x1="90" y1="50" x2="160" y2="90"/><line x1="90" y1="100" x2="160" y2="90"/>
+  </g>
+  <!-- pulso de señal -->
+  <circle r="4" fill="#38bdf8"><animateMotion path="M 20 75 L 90 50 L 160 40" dur="1.4s" repeatCount="indefinite"/></circle>
+  <circle r="4" fill="#818cf8"><animateMotion path="M 20 20 L 90 100 L 160 90" dur="1.7s" begin=".4s" repeatCount="indefinite"/></circle>
+  <g fill="#1c2b49" stroke="#38bdf8" stroke-width="2">
+    <circle cx="20" cy="20" r="11"/><circle cx="20" cy="75" r="11"/><circle cx="20" cy="130" r="11"/>
+    <circle cx="90" cy="0" r="11"/><circle cx="90" cy="50" r="11"/><circle cx="90" cy="100" r="11"/>
+    <circle cx="160" cy="40" r="12" fill="#fb7185" stroke="#fecdd3"/><circle cx="160" cy="90" r="12" fill="#34d399" stroke="#bbf7d0"/>
+  </g>
+  <text x="186" y="45" fill="#fecdd3" font-size="11.5">urbano</text>
+  <text x="186" y="95" fill="#bbf7d0" font-size="11.5">no urb.</text>
+</g>
+<!-- bosque -->
+<g transform="translate(580,40)">
+  <text x="70" y="-6" fill="#e8eefb" font-size="13.5" font-weight="700">3· ExtraTrees 🌳</text>
+  <g stroke="#34d399" stroke-width="2" fill="none">
+    <g><path d="M30,150 V110 M30,110 L10,80 M30,110 L50,80 M10,80 L0,55 M10,80 L22,55 M50,80 L40,55 M50,80 L62,55" stroke-dasharray="220" stroke-dashoffset="220"><animate attributeName="stroke-dashoffset" values="220;0;0" keyTimes="0;.4;1" dur="4s" repeatCount="indefinite"/></path></g>
+    <g><path d="M100,150 V115 M100,115 L82,88 M100,115 L118,88 M82,88 L74,64 M118,88 L126,64" stroke-dasharray="180" stroke-dashoffset="180"><animate attributeName="stroke-dashoffset" values="180;0;0" keyTimes="0;.4;1" dur="4s" begin=".8s" repeatCount="indefinite"/></path></g>
+  </g>
+  <text x="70" y="175" text-anchor="middle" fill="#93a4c3" font-size="11.5">100 árboles votan</text>
+</g>
+<!-- matriz de confusión -->
+<g transform="translate(170,250)">
+  <text x="210" y="0" text-anchor="middle" fill="#e8eefb" font-size="13.5" font-weight="700">4· el examen final: matriz de confusión (sobre el 30 % nunca visto)</text>
+  <g transform="translate(120,16)" font-size="13" text-anchor="middle">
+    <rect x="0" y="0" width="90" height="50" fill="#16413a" stroke="#34d399"><animate attributeName="fill-opacity" values=".4;1;.4" dur="3s" repeatCount="indefinite"/></rect>
+    <rect x="90" y="0" width="90" height="50" fill="#3f1d2b" stroke="#fb7185" fill-opacity=".5"/>
+    <rect x="0" y="50" width="90" height="50" fill="#3f1d2b" stroke="#fb7185" fill-opacity=".5"/>
+    <rect x="90" y="50" width="90" height="50" fill="#16413a" stroke="#34d399"><animate attributeName="fill-opacity" values=".4;1;.4" dur="3s" begin="1.5s" repeatCount="indefinite"/></rect>
+    <text x="45" y="30" fill="#86efac" font-weight="800">✔ aciertos</text>
+    <text x="135" y="30" fill="#fda4af">✘ errores</text>
+    <text x="45" y="80" fill="#fda4af">✘ errores</text>
+    <text x="135" y="80" fill="#86efac" font-weight="800">✔ aciertos</text>
+    <text x="-12" y="30" text-anchor="end" fill="#93a4c3" font-size="11.5">real: urbano</text>
+    <text x="-12" y="80" text-anchor="end" fill="#93a4c3" font-size="11.5">real: no urb.</text>
+    <text x="45" y="-8" fill="#93a4c3" font-size="11.5">predijo: urb.</text>
+    <text x="135" y="-8" fill="#93a4c3" font-size="11.5">predijo: no</text>
+  </g>
+  <!-- medidor de exactitud -->
+  <g transform="translate(360,38)">
+    <circle cx="0" cy="30" r="42" fill="none" stroke="#27395e" stroke-width="9"/>
+    <circle cx="0" cy="30" r="42" fill="none" stroke="#34d399" stroke-width="9" stroke-linecap="round"
+            stroke-dasharray="264" stroke-dashoffset="264" transform="rotate(-90 0 30)">
+      <animate attributeName="stroke-dashoffset" values="264;16" dur="2.4s" fill="freeze" repeatCount="indefinite"/>
+    </circle>
+    <text x="0" y="37" text-anchor="middle" fill="#fff" font-size="19" font-weight="800">~94%</text>
+  </g>
+</g>
+</svg>
+<figcaption>Separar 70/30, apilar red + bosque, y calificar solo con datos nunca vistos: el ritual completo del aprendizaje honesto.</figcaption>
+</div>
+
+<!-- ════════════════ 8 · LA PLATAFORMA ════════════════ -->
+<div class="cell md"><span class="gut">[teoría 8]</span>
+<h2><span class="n">8</span>La plataforma: Python, Jupyter… y tu navegador</h2>
+<p><b>Python</b> es el idioma de la ciencia de datos: claro, gratuito y con bibliotecas para todo (numpy para números, rasterio para imágenes satelitales, scikit-learn para aprendizaje). Un <b>cuaderno Jupyter</b> es la libreta de laboratorio de ese idioma: bloques de texto y código que se ejecutan de arriba hacia abajo, mostrando resultados en el camino — exactamente como esta página, pero viva.</p>
+<p>La novedad de este curso es <b>dónde</b> corre todo. El artículo de 2023 requería instalar Conda, GDAL y RSGISLib — horas de configuración. Hoy, gracias a <b>WebAssembly</b> (un formato que permite ejecutar programas completos dentro del navegador, con seguridad de caja de arena), Python científico entero corre <b>en la pestaña que tienes abierta</b>: sin instalar nada, sin permisos, sin enviar tus datos a ninguna nube.</p>
+</div>
+<div class="cell fig"><span class="gut">[figura 8]</span>
+<svg viewBox="0 0 760 360" role="img" aria-label="Python en el navegador con WebAssembly">
+<rect width="760" height="360" fill="#101c31"/>
+<!-- laptop isométrica -->
+<g transform="translate(170,210)">
+  <path d="M0,40 L170,-45 L340,40 L170,125 Z" fill="#1e293b" stroke="#334155"/>
+  <path d="M20,38 L170,-37 L320,38 L170,113 Z" fill="#0f172a"/>
+  <!-- pantalla -->
+  <g transform="translate(60,-150)">
+    <path d="M0,0 L220,0 L220,150 L0,150 Z" fill="#0b1322" stroke="#38bdf8" stroke-width="2" rx="6"/>
+    <rect x="0" y="0" width="220" height="22" fill="#16223a"/>
+    <circle cx="14" cy="11" r="4" fill="#fb7185"/><circle cx="28" cy="11" r="4" fill="#fbbf24"/><circle cx="42" cy="11" r="4" fill="#34d399"/>
+    <text x="110" y="15" text-anchor="middle" fill="#93a4c3" font-size="9.5">tu-curso.github.io — sin instalar nada</text>
+    <!-- celdas de cuaderno ejecutándose -->
+    <g font-family="Consolas,monospace" font-size="9" fill="#7dd3fc">
+      <rect x="10" y="32" width="200" height="20" rx="3" fill="#16223a"/>
+      <text x="16" y="45">import rasterio, sklearn ✓</text>
+      <rect x="10" y="58" width="200" height="20" rx="3" fill="#16223a">
+        <animate attributeName="stroke" values="none" dur="1s"/>
+      </rect>
+      <text x="16" y="71">seg = shepherd(imagen)</text>
+      <rect x="10" y="84" width="200" height="34" rx="3" fill="#101c31" stroke="#27395e"/>
+      <!-- mini mapa resultado -->
+      <g>
+        <rect x="18" y="90" width="32" height="20" fill="#65a30d"><animate attributeName="opacity" values="0;1" dur="2s" repeatCount="indefinite"/></rect>
+        <rect x="54" y="90" width="40" height="20" fill="#fb7185"><animate attributeName="opacity" values="0;0;1" keyTimes="0;.4;1" dur="2s" repeatCount="indefinite"/></rect>
+        <rect x="98" y="90" width="28" height="20" fill="#0e7490"><animate attributeName="opacity" values="0;0;1" keyTimes="0;.7;1" dur="2s" repeatCount="indefinite"/></rect>
+      </g>
+      <!-- indicador de ejecución -->
+      <circle cx="200" cy="68" r="4" fill="#fbbf24"><animate attributeName="opacity" values="1;.2;1" dur=".8s" repeatCount="indefinite"/></circle>
+    </g>
+  </g>
+</g>
+<!-- paquetes entrando a la pestaña -->
+<g font-size="10.5" font-family="Consolas,monospace" text-anchor="middle">
+  <g><rect x="-34" y="-10" width="68" height="20" rx="5" fill="#1d4ed8"/><text y="4" fill="#fff">numpy</text>
+     <animateMotion path="M 80 60 C 150 60, 180 50, 250 80" dur="2.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="2.6s" repeatCount="indefinite"/></g>
+  <g><rect x="-38" y="-10" width="76" height="20" rx="5" fill="#0e7490"/><text y="4" fill="#fff">rasterio</text>
+     <animateMotion path="M 90 130 C 160 120, 190 90, 255 105" dur="2.6s" begin=".9s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="2.6s" begin=".9s" repeatCount="indefinite"/></g>
+  <g><rect x="-38" y="-10" width="76" height="20" rx="5" fill="#7c3aed"/><text y="4" fill="#fff">sklearn</text>
+     <animateMotion path="M 86 200 C 150 190, 200 140, 258 132" dur="2.6s" begin="1.8s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="2.6s" begin="1.8s" repeatCount="indefinite"/></g>
+</g>
+<!-- nube tachada -->
+<g transform="translate(620,80)">
+  <ellipse cx="0" cy="0" rx="52" ry="26" fill="#1c2b49" stroke="#475569"/>
+  <text x="0" y="5" text-anchor="middle" fill="#93a4c3" font-size="11">la nube</text>
+  <line x1="-46" y1="-22" x2="46" y2="22" stroke="#fb7185" stroke-width="4"/>
+  <text x="0" y="48" text-anchor="middle" fill="#fb7185" font-size="11.5">tus datos NO viajan</text>
+</g>
+<!-- candado -->
+<g transform="translate(625,210)">
+  <rect x="-16" y="-6" width="32" height="26" rx="5" fill="#34d399"/>
+  <path d="M-9,-6 v-7 a9,9 0 0 1 18,0 v7" fill="none" stroke="#34d399" stroke-width="4"/>
+  <text x="0" y="44" text-anchor="middle" fill="#86efac" font-size="11.5">WebAssembly = caja de arena</text>
+</g>
+<text x="380" y="340" text-anchor="middle" fill="#93a4c3" font-size="13">Python + Jupyter + WebAssembly: el laboratorio completo vive dentro de la pestaña</text>
+</svg>
+<figcaption>De "instala Conda, GDAL y RSGISLib" (2023) a <b>"abre esta URL"</b> (hoy). La ciencia es la misma; la fricción desapareció.</figcaption>
+</div>
+
+<!-- ════════════════ CIERRE ════════════════ -->
+<div class="cell md"><span class="gut">[cierre]</span>
+<h2><span class="n">9</span>El mapa completo del ejercicio</h2>
+<table>
+<tr><th>Paso</th><th>Concepto</th><th>Herramienta actual</th></tr>
+<tr><td>1</td><td>Imagen limpia anual</td><td>Geomediana Sentinel-2 (Zenodo)</td></tr>
+<tr><td>2</td><td>Del píxel al objeto</td><td><code>shepherd-wasm</code> (segmentación Shepherd)</td></tr>
+<tr><td>3</td><td>Verdad-terreno</td><td>Marco Geoestadístico INEGI 2020</td></tr>
+<tr><td>4</td><td>Imagen → tabla</td><td><code>numpy</code> (estadísticas zonales)</td></tr>
+<tr><td>5</td><td>Entrenar y evaluar</td><td><code>scikit-learn</code> (MLP + ExtraTrees, 70/30)</td></tr>
+<tr><td>6</td><td>Mapa clasificado</td><td><code>geopandas</code> + matplotlib</td></tr>
+</table>
+<p>Ahora sí: toda la teoría que necesitas ya está en tu cabeza. Es hora de ejecutarla con tus propias manos — en tu navegador.</p>
+<div class="cta">
+  <a class="btn" href="./lab/index.html?path=Taller_Shepherd_WASM.ipynb">🚀 Abrir el taller interactivo</a>
+  <a class="btn ghost" href="./index.html">⟵ Volver a la portada</a>
+</div>
+</div>
+
+<footer>
+Basado en <i>«Machine Learning para detectar zonas urbanas en imágenes Sentinel-2»</i> — Abel Alejandro Coronado Iruegas, Ph.D. (2023).<br/>
+Referencias: Roberts et al. (2017) · Shepherd, Bunting &amp; Dymond (2019) · Coronado, Argumedo &amp; Juárez (2022), Zenodo 10.5281/zenodo.6908357 · Marco Geoestadístico INEGI 2020.<br/>
+Edición interactiva y SVGs: <b>abxda × Claude</b> · <a href="https://github.com/abxda/portable-satelital">portable-satelital</a> · <a href="https://github.com/abxda/shepherd-wasm">shepherd-wasm</a>
+</footer>
+</div></body></html>
