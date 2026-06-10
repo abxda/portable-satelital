@@ -57,8 +57,12 @@ def main():
           f"maxSpectralDiff={ref.maxSpectralDiff:.4f}, {tRef:.1f}s")
 
     t0 = time.perf_counter()
+    # maxClumpSize=10000: modo COMPATIBILIDAD para validar bit a bit contra
+    # pyshepseg (que trae ese tope con su artefacto de tiras). El default de
+    # shepherd_pure es None = fiel al algoritmo/RSGISLib.
     mine = shepherd_pure.doShepherdSegmentation(
-        img, kmeansObj=km, minSegmentSize=minSeg, imgNullVal=nodata)
+        img, kmeansObj=km, minSegmentSize=minSeg, imgNullVal=nodata,
+        maxClumpSize=10000)
     tMine = time.perf_counter() - t0
     print(f"puro      : {int(mine.segimg.max())} segmentos, "
           f"singles={mine.singlePixelsEliminated} small={mine.smallSegmentsEliminated}, "

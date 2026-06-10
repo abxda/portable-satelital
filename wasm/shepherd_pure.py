@@ -40,8 +40,27 @@ class SegmentationResult:
 def doShepherdSegmentation(img, numClusters=60, clusterSubsamplePcnt=1,
         minSegmentSize=50, maxSpectralDiff='auto', imgNullVal=None,
         fourConnected=True, verbose=False, fixedKMeansInit=False,
-        kmeansObj=None, spectDistPcntile=50):
-    """Misma firma y semántica que pyshepseg.shepseg.doShepherdSegmentation."""
+        kmeansObj=None, spectDistPcntile=50, maxClumpSize=None):
+    """Misma firma que pyshepseg.shepseg.doShepherdSegmentation, con UNA
+    divergencia DELIBERADA y documentada: maxClumpSize.
+
+    DEFECTO HEREDADO DE pyshepseg (no del algoritmo): su clump() trae un tope
+    duro MAX_CLUMP_SIZE=10000 px (optimización de performance del port a
+    numba). Cualquier objeto homogéneo mayor —un lago, una presa, una mancha
+    urbana compacta— queda REBANADO en tiras paralelas (la huella del frente
+    del flood fill) que la eliminación nunca fusiona, porque cada tira supera
+    minSegmentSize. RSGISLib, la implementación canónica de los autores del
+    paper, NO tiene ese tope y produce el objeto entero. Caso documentado:
+    Laguna de Yuriria — con tope, segmento mayor 11,767 px (lago en ~30
+    tiras); sin tope, 387,989 px (lago entero), idéntico en estructura a
+    RSGISLib.
+
+      maxClumpSize=None  (DEFAULT) -> fiel al ALGORITMO (paper/RSGISLib):
+                                      objetos grandes quedan enteros.
+      maxClumpSize=10000           -> modo compatibilidad: reproduce
+                                      bit a bit a pyshepseg, incluido su
+                                      artefacto (útil solo para validación).
+    """
     if kmeansObj is not None:
         km = kmeansObj
     else:
@@ -49,7 +68,8 @@ def doShepherdSegmentation(img, numClusters=60, clusterSubsamplePcnt=1,
                                  imgNullVal, fixedKMeansInit)
     clusters = applySpectralClusters(km, img, imgNullVal)
 
-    seg, maxSegId = clump(clusters, SEGNULLVAL, fourConnected, MINSEGID)
+    seg, maxSegId = clump(clusters, SEGNULLVAL, fourConnected, MINSEGID,
+                          maxClumpSize=maxClumpSize)
     maxSegId = maxSegId - 1
     if verbose:
         print("clumps:", maxSegId)
@@ -135,13 +155,16 @@ def autoMaxSpectralDiff(km, maxSpectralDiff, distPcntile):
 
 # ---------------------------------------------------------------- paso 2
 
-def clump(img, ignoreVal, fourConnected=True, clumpId=1):
+def clump(img, ignoreVal, fourConnected=True, clumpId=1,
+          maxClumpSize=MAX_CLUMP_SIZE):
     """Componentes conexos con IDs en orden de descubrimiento raster.
 
     Vía rápida: scipy.ndimage.label por valor de cluster + renumeración por
     primera aparición en barrido raster == flood fill de la referencia,
-    SIEMPRE que ningún componente alcance MAX_CLUMP_SIZE (si lo alcanza, la
+    SIEMPRE que ningún componente alcance maxClumpSize (si lo alcanza, la
     referencia lo parte; caemos al flood fill exacto, lento pero fiel).
+    Con maxClumpSize=None no hay tope: la vía rápida es siempre exacta y los
+    objetos grandes (lagos, manchas urbanas) quedan enteros.
     """
     structure = (np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]]) if fourConnected
                  else np.ones((3, 3), dtype=int))
@@ -155,8 +178,9 @@ def clump(img, ignoreVal, fourConnected=True, clumpId=1):
         nextLabel += n
 
     sizes = np.bincount(out.ravel())
-    if len(sizes) > 1 and sizes[1:].max() >= MAX_CLUMP_SIZE:
-        return _clumpExact(img, ignoreVal, fourConnected, clumpId)
+    if (maxClumpSize is not None and len(sizes) > 1
+            and sizes[1:].max() >= maxClumpSize):
+        return _clumpExact(img, ignoreVal, fourConnected, clumpId, maxClumpSize)
 
     # renumera por primera aparición en orden raster (= orden de descubrimiento)
     flat = out.ravel()
@@ -170,8 +194,8 @@ def clump(img, ignoreVal, fourConnected=True, clumpId=1):
     return seg, clumpId + nextLabel
 
 
-def _clumpExact(img, ignoreVal, fourConnected, clumpId):
-    """Flood fill exacto de la referencia (con tope MAX_CLUMP_SIZE)."""
+def _clumpExact(img, ignoreVal, fourConnected, clumpId, maxClumpSize=MAX_CLUMP_SIZE):
+    """Flood fill exacto de la referencia (con tope maxClumpSize)."""
     ysize, xsize = img.shape
     output = np.zeros((ysize, xsize), dtype=SegIdType)
     stack = []
@@ -183,7 +207,7 @@ def _clumpExact(img, ignoreVal, fourConnected, clumpId):
                 stack.clear()
                 stack.append((y, x))
                 output[y, x] = clumpId
-                while stack and clumpSize < MAX_CLUMP_SIZE:
+                while stack and clumpSize < maxClumpSize:
                     sy, sx = stack.pop()
                     for cx in range(max(sx - 1, 0), min(sx + 1, xsize - 1) + 1):
                         for cy in range(max(sy - 1, 0), min(sy + 1, ysize - 1) + 1):
