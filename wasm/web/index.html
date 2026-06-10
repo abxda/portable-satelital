@@ -4,6 +4,11 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Curso de Análisis de Imágenes Satelitales · Dr. Abel Coronado</title>
+<!-- IMPORTANTE: JupyterLite (config-utils.js) hereda configuracion leyendo el
+     jupyter-config-data de los index.html PADRES. El deploy inyecta aqui el
+     bloque del index.html generado por jupyter lite build; sin el, /lab muere
+     con "Cannot read properties of null (reading 'textContent')". -->
+<!--JUPYTER_CONFIG-->
 <style>
   :root{--bg:#0e1726;--panel:#16223a;--panel2:#1c2b49;--text:#e8eefb;--dim:#93a4c3;
         --cy:#38bdf8;--line:#27395e;}
