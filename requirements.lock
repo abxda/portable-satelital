@@ -1097,6 +1097,7 @@ numpy==1.26.4 \
     #   scikit-learn
     #   scipy
     #   shapely
+    #   shepherd-wasm
 overrides==7.7.0 \
     --hash=sha256:55158fa3d93b98cc75299b1e67078ad9003ca27945c76162c1c0766d6f91820a \
     --hash=sha256:c7ed9d062f78b8e4c1a7b70bd8796b35ead4d9f510227ef9c5dc7626c60d7e49
@@ -1877,6 +1878,7 @@ scikit-learn==1.9.0 \
     # via
     #   -r D:/PortableSatelital/requirements.txt
     #   pyshepseg
+    #   shepherd-wasm
 scipy==1.17.1 \
     --hash=sha256:010f4333c96c9bb1a4516269e33cb5917b08ef2166d5556ca2fd9f082a9e6ea0 \
     --hash=sha256:02ae3b274fde71c5e92ac4d54bc06c42d80e399fec704383dcd99b301df37458 \
@@ -1942,6 +1944,7 @@ scipy==1.17.1 \
     # via
     #   -r D:/PortableSatelital/requirements.txt
     #   scikit-learn
+    #   shepherd-wasm
 send2trash==2.1.0 \
     --hash=sha256:0da2f112e6d6bb22de6aa6daa7e144831a4febf2a87261451c4ad849fe9a873c \
     --hash=sha256:1c72b39f09457db3c05ce1d19158c2cbef4c32b8bedd02c155e49282b7ea7459
@@ -2005,6 +2008,10 @@ shapely==2.1.2 \
     --hash=sha256:fe7b77dc63d707c09726b7908f575fc04ff1d1ad0f3fb92aec212396bc6cfe5e \
     --hash=sha256:fe9627c39c59e553c90f5bc3128252cb85dc3b3be8189710666d2f8bc3a5503e
     # via geopandas
+shepherd-wasm==1.1.0 \
+    --hash=sha256:580b1b012160867985bc6446c6e93ff5f0a37bf548a16c9786bed902332bd25c \
+    --hash=sha256:7e6106a1401ad0812c2339891dae0106127eac0643feecdc97f0a6bb2b2db435
+    # via -r D:/PortableSatelital/requirements.txt
 six==1.17.0 \
     --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274 \
     --hash=sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81

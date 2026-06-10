@@ -28,7 +28,7 @@ if (Test-Path $Site) { Remove-Item -Recurse -Force $Site }
 # limpiar el cache de doit: si no, omite tareas (p.ej. extraer pyodide) aunque
 # el output-dir se haya borrado
 Remove-Item (Join-Path $Wasm ".jupyterlite.doit.db") -Force -ErrorAction SilentlyContinue
-$Wheel = (Get-ChildItem (Join-Path $Root "dist\wheels\shepherd_pure-*.whl") | Select-Object -First 1).FullName
+$Wheel = (Get-ChildItem (Join-Path $Root "dist\wheels\shepherd_wasm-*.whl") | Select-Object -First 1).FullName
 Push-Location $Wasm
 & $Jupyter lite build --contents _contents --settings-overrides overrides.json --piplite-wheels $Wheel --output-dir $Site
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw "jupyter lite build fallo" }

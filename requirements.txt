@@ -12,3 +12,4 @@ geopandas
 exactextract
 matplotlib
 pyyaml
+shepherd-wasm
