@@ -38,3 +38,6 @@ notebooks/data/
 wasm/_contents/
 
 .jupyterlite.doit.db
+
+# binarios del taller-servidor (los produce el CI)
+taller-servidor/taller-servidor-*
