@@ -44,17 +44,18 @@ Es nuestra reimplementación del mismo algoritmo en numpy/scipy puro
 y con el tope convertido en parámetro — apagado por default.
 
 ```bash
-# un solo archivo, sin instalación:
-curl -L -O https://raw.githubusercontent.com/abxda/shepherd-wasm/main/shepherd_pure.py
+pip install shepherd-wasm
 ```
+(publicado en PyPI con Trusted Publishing: el paquete está ligado criptográficamente
+al repositorio público — verificable en pypi.org/project/shepherd-wasm)
 
 ```python
 # en tu script, cambia:
 #   from pyshepseg import shepseg
 #   res = shepseg.doShepherdSegmentation(img, ...)
 # por:
-import shepherd_pure
-res = shepherd_pure.doShepherdSegmentation(img, numClusters=60,
+import shepherd_wasm
+res = shepherd_wasm.doShepherdSegmentation(img, numClusters=60,
                                            minSegmentSize=100,
                                            imgNullVal=nodata)
 # misma firma, mismo SegmentationResult. El default maxClumpSize=None
