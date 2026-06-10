@@ -1,6 +1,0 @@
-pyproject.toml
-shepherd_pure.py
-shepherd_pure.egg-info/PKG-INFO
-shepherd_pure.egg-info/SOURCES.txt
-shepherd_pure.egg-info/dependency_links.txt
-shepherd_pure.egg-info/top_level.txt

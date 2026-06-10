@@ -41,3 +41,7 @@ wasm/_contents/
 
 # binarios del taller-servidor (los produce el CI)
 taller-servidor/taller-servidor-*
+
+# artefactos de empaquetado
+wasm/paquete/build/
+wasm/paquete/*.egg-info/
