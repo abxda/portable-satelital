@@ -40,12 +40,36 @@ jobs:
         working-directory: satlab-launcher
         run: wails build -platform windows/amd64
 
+      - name: Build TallerServidor (3 OS, Go puro, reproducible)
+        shell: pwsh
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          Set-Location taller-servidor
+          go build -trimpath -ldflags "-s -w" -o ../TallerServidor.exe .
+          $env:GOOS = "linux";  go build -trimpath -ldflags "-s -w" -o ../taller-servidor-linux-amd64 .
+          $env:GOOS = "darwin"; $env:GOARCH = "arm64"
+          go build -trimpath -ldflags "-s -w" -o ../taller-servidor-macos-arm64 .
+
       - name: Hashes
         shell: pwsh
         run: |
-          $sha = (Get-FileHash satlab-launcher/build/bin/SatLab.exe -Algorithm SHA256).Hash.ToLower()
-          "$sha  SatLab.exe" | Out-File -Encoding ascii SHA256SUMS.txt
+          $lineas = @()
+          foreach ($f in @("satlab-launcher/build/bin/SatLab.exe", "TallerServidor.exe",
+                           "taller-servidor-linux-amd64", "taller-servidor-macos-arm64")) {
+            $sha = (Get-FileHash $f -Algorithm SHA256).Hash.ToLower()
+            $lineas += "$sha  $(Split-Path $f -Leaf)"
+          }
+          $lineas | Out-File -Encoding ascii SHA256SUMS.txt
           Get-Content SHA256SUMS.txt
+
+      - name: Attest TallerServidor (3 OS)
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            TallerServidor.exe
+            taller-servidor-linux-amd64
+            taller-servidor-macos-arm64
 
       - name: Attest build provenance
         uses: actions/attest-build-provenance@v2
@@ -59,6 +83,9 @@ jobs:
         run: |
           gh release create $env:GITHUB_REF_NAME `
             satlab-launcher/build/bin/SatLab.exe `
+            TallerServidor.exe `
+            taller-servidor-linux-amd64 `
+            taller-servidor-macos-arm64 `
             SHA256SUMS.txt `
             --title "SatLab $env:GITHUB_REF_NAME" `
             --notes "Launcher visual del Laboratorio Satelital Portable. Verificacion: VERIFICACION.md (attestation: ``gh attestation verify SatLab.exe --repo abxda/portable-satelital``)."

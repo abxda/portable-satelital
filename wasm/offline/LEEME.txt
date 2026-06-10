@@ -1,39 +1,43 @@
-TALLER OFFLINE - Machine Learning para detectar zonas urbanas
+TALLER OFFLINE (HABILITADOR) - ML para detectar zonas urbanas
 Curso de Analisis de Imagenes Satelitales - Dr. Abel Coronado
 ===============================================================
 
 PARA EL ALUMNO:
-  Windows:     doble clic en  Iniciar_Taller.bat
-  Linux/macOS: ejecutar  ./iniciar_taller.sh
+  Windows:  doble clic en  TallerServidor.exe
+            Si Windows muestra el aviso azul de SmartScreen:
+            "Mas informacion" -> "Ejecutar de todas formas"
+            (abajo explicamos por que aparece y como verificar el programa)
+  Linux:    ./taller-servidor-linux-amd64      (antes: chmod +x)
+  macOS:    ./taller-servidor-macos-arm64      (antes: chmod +x; si Gatekeeper
+            bloquea: xattr -d com.apple.quarantine taller-servidor-macos-arm64)
+
   Se abre tu navegador con el taller. No necesitas internet.
-  Para terminar: cierra la ventanita del servidor (o Ctrl+C).
 
-PARA EL AREA DE TI / CIBERSEGURIDAD (este kit NO trae ejecutables):
-  La carpeta contiene SOLO datos estaticos (sitio\) y lanzadores de texto
-  auditable (.bat / .sh). El servidor lo pone el sistema, por canal oficial:
+TUS PROPIOS DATOS (esto es lo importante):
+  Copia tus imagenes GeoTIFF y tus etiquetas a la carpeta  mis_datos\
+  con el Explorador. El cuaderno las encuentra al instante (seccion
+  "El taller es tuyo"). Ya hay un ejemplo dentro para que pruebes.
 
-  * WINDOWS -> IIS Express, el servidor ligero gratuito de Microsoft.
-    Instalacion unica por TI con el MSI oficial firmado por Microsoft:
-    https://www.microsoft.com/en-us/download/details.aspx?id=48264
-    El .bat solo lo invoca:  iisexpress.exe /path:sitio /port:8765
-    Binario firmado "Microsoft Corporation", corre como usuario normal,
-    escucha SOLO en localhost, sirve solo lectura. El unico archivo de
-    configuracion es sitio\web.config (tipos MIME; 20 lineas auditables).
+PARA EL AREA DE TI / CIBERSEGURIDAD:
+  TallerServidor es un servidor de archivos estaticos de ~100 lineas de
+  Go (codigo completo: github.com/abxda/portable-satelital, carpeta
+  taller-servidor/). No esta firmado con Authenticode (proyecto educativo
+  sin certificado comercial) pero su procedencia es VERIFICABLE
+  criptograficamente, algo mas fuerte que la reputacion de SmartScreen:
 
-  * LINUX -> caddy o nginx desde el REPOSITORIO de la distro (paquetes
-    firmados GPG por la distro), o python3 que ya es parte del sistema.
-    El .sh usa: caddy file-server  (o python3 -m http.server).
+  1. Compilado en GitHub Actions con artifact attestation:
+       gh attestation verify TallerServidor.exe --repo abxda/portable-satelital
+     prueba matematica de que el binario salio de ese codigo publico.
+  2. Build reproducible: compilelo usted mismo (go build -trimpath) y
+     obtendra el MISMO SHA-256.
+  3. SHA-256 publicado en el release de GitHub + analisis VirusTotal.
 
-  * macOS -> caddy via Homebrew, o el Python oficial de python.org
-    (firmado y notarizado por la Python Software Foundation).
+  Comportamiento: escucha SOLO en 127.0.0.1, sirve solo-lectura las
+  carpetas sitio\ y mis_datos\, no acepta subidas, no requiere
+  administrador, no toca registro ni firewall. Borrar la carpeta = fin.
 
-  En todos los casos: loopback unicamente (127.0.0.1), sin administrador
-  para EJECUTAR, sin reglas de firewall, sin tocar el registro. Borrar la
-  carpeta elimina todo.
+  El contenido de sitio\ es JupyterLite + Pyodide: Python cientifico en
+  WebAssembly, dentro de la caja de arena del navegador.
 
-  El contenido de sitio\ es JupyterLite + Pyodide: Python cientifico
-  compilado a WebAssembly que corre DENTRO del navegador, en su caja de
-  arena estandar. Nada se instala en el equipo.
-
-  Cadena de verificacion completa del proyecto:
+  Cadena de verificacion completa:
   https://github.com/abxda/portable-satelital/blob/main/VERIFICACION.md
