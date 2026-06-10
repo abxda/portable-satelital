@@ -16,7 +16,7 @@ Write-Host "==> [1/4] staging de contenidos"
 $C = Join-Path $Wasm "_contents"
 if (Test-Path $C) { Remove-Item -Recurse -Force $C }
 New-Item -ItemType Directory -Force $C | Out-Null
-Copy-Item (Join-Path $Wasm "taller\Taller_Shepherd_WASM.ipynb") $C
+Copy-Item (Join-Path $Wasm "taller\Taller_ML_Urbano_WASM.ipynb") $C
 Copy-Item (Join-Path $Wasm "shepherd_pure.py") $C
 Copy-Item (Join-Path $Wasm "files\tile_ags_256.tif") $C
 Copy-Item (Join-Path $Wasm "files\labels_256.tif") $C
@@ -29,14 +29,24 @@ if ($LASTEXITCODE -ne 0) { Pop-Location; throw "jupyter lite build fallo" }
 Pop-Location
 
 Write-Host "==> [3/4] overlay portada/teoria con jupyter-config-data inyectado"
-$built = Get-Content (Join-Path $Site "index.html") -Raw
+# OJO: -Encoding UTF8 SIEMPRE. PowerShell 5.1 sin -Encoding lee como ANSI y
+# convierte la portada UTF-8 en mojibake (bug real del primer deploy).
+$built = Get-Content (Join-Path $Site "index.html") -Raw -Encoding UTF8
 $m = [regex]::Match($built, '(?s)<script id="jupyter-config-data"[^>]*>.*?</script>')
 if (-not $m.Success) { throw "no encontre jupyter-config-data en el index generado" }
-$portada = Get-Content (Join-Path $Wasm "web\index.html") -Raw
+$portada = Get-Content (Join-Path $Wasm "web\index.html") -Raw -Encoding UTF8
 if ($portada -notmatch "<!--JUPYTER_CONFIG-->") { throw "portada sin placeholder JUPYTER_CONFIG" }
 # .Replace (no -replace): el JSON trae caracteres que -replace interpreta
 $final = $portada.Replace("<!--JUPYTER_CONFIG-->", $m.Value)
-[IO.File]::WriteAllText((Join-Path $Site "index.html"), $final)
+[IO.File]::WriteAllText((Join-Path $Site "index.html"), $final,
+                        (New-Object System.Text.UTF8Encoding $false))
+# sanity de encoding, construido en ASCII puro (este .ps1 sin BOM se lee como
+# ANSI en PS 5.1: un literal acentuado aqui se corrompe y el match miente):
+$check = Get-Content (Join-Path $Site "index.html") -Raw -Encoding UTF8
+$acentuada = "An" + [char]0xE1 + "lisis"      # 'Analisis' con a acentuada
+$mojibake = [string][char]0xC3                 # firma tipica de UTF-8 leido como ANSI
+if (-not $check.Contains($acentuada)) { throw "encoding roto: falta texto acentuado" }
+if ($check.Contains($mojibake + [char]0x83)) { throw "encoding roto: mojibake detectado" }
 Copy-Item (Join-Path $Wasm "web\teoria.html") $Site
 
 # sanity: el index final DEBE tener el bloque
