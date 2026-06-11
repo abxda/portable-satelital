@@ -184,6 +184,7 @@
   <button class="ibtn on" id="bAgua" onclick="firma('agua')">💧 agua</button>
   <button class="ibtn" id="bVege" onclick="firma('vege')">🌿 vegetación</button>
   <button class="ibtn" id="bUrba" onclick="firma('urba')">🏙️ ciudad</button>
+  <button class="ibtn" id="bSuel" onclick="firma('suel')">🟤 suelo seco</button>
 </div>
 <svg viewBox="0 0 760 330" role="img" aria-label="Firmas espectrales interactivas">
 <!-- terreno con los 3 parches -->
@@ -201,6 +202,10 @@
     <path d="M168,-64 l12,-6 v-20 l-12,6 Z" fill="#e2e8f0" stroke="#475569"/><path d="M168,-64 l-12,-6 v-20 l12,6 Z" fill="#94a3b8" stroke="#475569"/>
     <text x="180" y="-8" text-anchor="middle" fill="#475569" font-size="12.5" font-weight="700">ciudad</text>
   </g>
+  <g id="pSuel" style="cursor:pointer" onclick="firma('suel')">
+    <path d="M60,-30 L120,-60 L180,-30 L120,0 Z" fill="#d6a35c" stroke="#92400e" stroke-width="1.5"/>
+    <text x="84" y="-40" text-anchor="middle" fill="#92400e" font-size="12.5" font-weight="700">suelo</text>
+  </g>
   <text x="120" y="120" text-anchor="middle" fill="#64748b" font-size="12.5">haz clic en un parche 👆</text>
 </g>
 <!-- firma -->
@@ -208,7 +213,7 @@
   <text x="150" y="0" text-anchor="middle" fill="#0f172a" font-size="14" font-weight="700" id="firmaTitulo">firma espectral del agua</text>
   <g font-family="Consolas,monospace" font-size="11" fill="#475569">
     <g id="barras"></g>
-    <text x="-6" y="250" fill="#64748b" font-family="Segoe UI" font-size="11.5">b1…b4 = visibles · b5…b8 = borde rojo y NIR · b9…b12 = vapor y SWIR</text>
+    <text x="-6" y="250" fill="#64748b" font-family="Segoe UI" font-size="11.5"><tspan fill="#0284c7" font-weight="700">●</tspan> = las 6 bandas "calidad Landsat" que usarás en el taller</text>
   </g>
 </g>
 <text x="380" y="318" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="600" id="firmaMoraleja">el agua absorbe casi todo el infrarrojo: su firma se desploma tras b4 📉</text>
@@ -678,18 +683,29 @@ const FIRMAS = {
          m: "la vegetación 'grita' en el borde rojo y el NIR (b5–b8): clorofila pura 🌿"},
   urba: {v: [52, 56, 60, 66, 68, 70, 72, 74, 70, 30, 86, 80],
          t: "firma espectral de la ciudad",
-         m: "el concreto refleja parejo y fuerte en SWIR (b11–b12): así se delata 🏙️"}
+         m: "el concreto refleja parejo y fuerte en SWIR (b11–b12): así se delata 🏙️"},
+  suel: {v: [46, 50, 58, 68, 72, 75, 78, 80, 79, 34, 94, 88],
+         t: "firma espectral del suelo seco",
+         m: "⚠ compárala con la ciudad: ¡casi gemelas! Por eso el modelo necesita TODAS las bandas (y los objetos, no píxeles sueltos)"}
 };
 const COLS = ["#9333ea","#6d28d9","#4338ca","#1d4ed8","#0e7490","#0f766e",
               "#15803d","#4d7c0f","#a16207","#b45309","#9a3412","#7f1d1d"];
+const BANDAS_TALLER = [1, 2, 3, 7, 10, 11];   // B02,B03,B04,B08,B11,B12
+const ZONAS = [["VISIBLE", 0, 3, "#6d28d9"], ["borde rojo + NIR", 4, 9, "#15803d"], ["SWIR", 10, 11, "#9a3412"]];
 function buildBarras() {
   const g = document.getElementById("barras");
   let h = "";
   for (let i = 0; i < 12; i++) {
-    const y = 14 + i * 18;
-    h += `<text x="0" y="${y+9}" fill="#475569">b${i+1}</text>` +
+    const y = 14 + i * 18, taller = BANDAS_TALLER.includes(i);
+    h += (taller ? `<circle cx="-8" cy="${y+5.5}" r="3" fill="#0284c7"/>` : "") +
+         `<text x="0" y="${y+9}" fill="${taller ? "#0f172a" : "#94a3b8"}"${taller ? ' font-weight="700"' : ""}>b${i+1}</text>` +
          `<rect x="40" y="${y}" height="11" width="4" fill="${COLS[i]}" rx="2" ` +
          `style="transition:width .6s cubic-bezier(.4,0,.2,1)" id="bar${i}"/>`;
+  }
+  for (const [nom, i0, i1, col] of ZONAS) {
+    const y0 = 14 + i0 * 18, y1 = 14 + i1 * 18 + 11;
+    h += `<line x1="268" y1="${y0}" x2="268" y2="${y1}" stroke="${col}" stroke-width="2" opacity=".55"/>` +
+         `<text x="274" y="${(y0+y1)/2 + 4}" fill="${col}" font-family="Segoe UI" font-size="10" font-weight="700">${nom}</text>`;
   }
   g.innerHTML = h;
 }
@@ -699,8 +715,12 @@ function firma(k) {
     document.getElementById("bar" + i).setAttribute("width", Math.max(4, f.v[i] * 2.1));
   document.getElementById("firmaTitulo").textContent = f.t;
   document.getElementById("firmaMoraleja").textContent = f.m;
-  for (const [id, kk] of [["bAgua","agua"],["bVege","vege"],["bUrba","urba"]])
+  for (const [id, kk] of [["bAgua","agua"],["bVege","vege"],["bUrba","urba"],["bSuel","suel"]])
     document.getElementById(id).classList.toggle("on", kk === k);
+  for (const [pid, kk] of [["pAgua","agua"],["pVege","vege"],["pUrba","urba"],["pSuel","suel"]]) {
+    const p = document.getElementById(pid).querySelector("path");
+    p.setAttribute("stroke-width", kk === k ? 3.5 : 1.5);
+  }
 }
 // ---------- figura 4: mini-Shepherd REAL (siembra → aglomerado → eliminación) ----------
 const SW = 20, SH = 12, SCEL = 17, SN = SW * SH;
