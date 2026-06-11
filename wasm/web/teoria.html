@@ -51,6 +51,19 @@
   .ibtn:hover{border-color:#0ea5e9}
   .ibtn.on{background:#0ea5e9;color:#fff;border-color:#0ea5e9}
   .ibar{text-align:center;padding:8px 0 4px;background:var(--paper)}
+  .figmax{position:absolute;top:6px;right:8px;width:30px;height:30px;border:none;background:none;
+          font-size:17px;line-height:1;color:#94a3b8;cursor:pointer;opacity:.4;z-index:5;padding:0}
+  .figmax:hover{opacity:1}
+  #figmodal{display:none;position:fixed;inset:0;z-index:60;background:rgba(255,255,255,.985);
+            align-items:center;justify-content:center}
+  #figmodal.abierto{display:flex}
+  #figmodal .mwrap{width:min(97vw,1500px);max-height:97vh;overflow:auto}
+  #figmodal .cell.fig{margin:0;border:none;box-shadow:none}
+  #figmodal svg{width:100%}
+  #figmodal .figmax,#figmodal .gut{display:none}
+  .mclose{position:fixed;top:8px;right:14px;width:38px;height:38px;border:none;background:none;
+          font-size:22px;line-height:1;color:#94a3b8;cursor:pointer;opacity:.45;z-index:61;padding:0}
+  .mclose:hover{opacity:.95}
   footer{color:var(--dim);font-size:13px;text-align:center;margin-top:46px;line-height:1.7}
   @media (max-width:780px){.gut{display:none}.cell{padding:20px 18px}}
 </style>
@@ -323,37 +336,27 @@
 <div class="cell"><span class="gut">[teoría 6]</span>
 <h2><span class="n">6</span>De la imagen a la tabla</h2>
 <p>Los algoritmos no comen imágenes: comen <b>tablas</b>. Para cada objeto calculamos sus <b>estadísticas zonales</b> (media y desviación de cada banda) y su proporción de píxeles urbanos: <b>una fila por objeto, una columna por característica</b>. El artículo lo hacía con la <i>Raster Attribute Table</i> de RSGISLib; hoy bastan unas líneas de <code>numpy</code> que corren hasta en el navegador.</p>
+<p>La figura de abajo lo muestra <b>en vivo, con los objetos de la figura 4</b>: eliges un objeto, se <b>intersecta con la imagen</b>, sus píxeles se <b>extraen como recorte</b> (con la forma exacta del objeto), se despliegan sus <b>6 bandas</b>… y todo se condensa en <b>una fila</b> con números calculados de verdad.</p>
 </div>
 <div class="cell fig"><span class="gut">[figura 6]</span>
-<svg viewBox="0 0 760 290" role="img" aria-label="De objetos a tabla">
-<g transform="translate(80,140)">
-  <path d="M0,0 L48,-24 L96,0 L48,24 Z" fill="#84cc16" stroke="#4d7c0f"/>
-  <path d="M96,0 L144,-24 L192,0 L144,24 Z" fill="#94a3b8" stroke="#475569"/>
-  <path d="M48,24 L96,0 L144,24 L96,48 Z" fill="#0ea5e9" stroke="#0369a1"/>
-  <text x="48" y="-32" text-anchor="middle" fill="#4d7c0f" font-size="11.5" font-weight="700">#17</text>
-  <text x="144" y="-32" text-anchor="middle" fill="#475569" font-size="11.5" font-weight="700">#18</text>
-  <text x="96" y="68" text-anchor="middle" fill="#0369a1" font-size="11.5" font-weight="700">#19</text>
-</g>
-<g>
-  <rect width="24" height="11" rx="3" fill="#84cc16"><animateMotion path="M 170 110 C 250 88, 300 90, 352 100" dur="2.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;1;0" dur="2.4s" repeatCount="indefinite"/></rect>
-  <rect width="24" height="11" rx="3" fill="#94a3b8"><animateMotion path="M 250 115 C 295 108, 320 112, 352 122" dur="2.4s" begin=".8s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;1;0" dur="2.4s" begin=".8s" repeatCount="indefinite"/></rect>
-  <rect width="24" height="11" rx="3" fill="#0ea5e9"><animateMotion path="M 200 175 C 270 160, 320 150, 352 144" dur="2.4s" begin="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;1;0" dur="2.4s" begin="1.6s" repeatCount="indefinite"/></rect>
-</g>
-<g transform="translate(385,52)" font-family="Consolas,monospace" font-size="12">
-  <rect x="0" y="0" width="330" height="180" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
-  <text x="14" y="24" fill="#0f172a" font-weight="700">id   b1Mean b4Mean ... b6Std prop_urb</text>
-  <line x1="10" y1="32" x2="320" y2="32" stroke="#cbd5e1"/>
-  <g fill="#334155">
-    <g><text x="14" y="54">#17  1043   3712  ...  201     0.04</text><animate attributeName="opacity" values="0;1;1" keyTimes="0;.2;1" dur="2.4s" repeatCount="indefinite"/></g>
-    <g><text x="14" y="79">#18  1561   1893  ...  455     0.96</text><animate attributeName="opacity" values="0;0;1;1" keyTimes="0;.33;.53;1" dur="2.4s" repeatCount="indefinite"/></g>
-    <g><text x="14" y="104">#19   721    802  ...   88     0.00</text><animate attributeName="opacity" values="0;0;1;1" keyTimes="0;.66;.86;1" dur="2.4s" repeatCount="indefinite"/></g>
-    <text x="14" y="132" fill="#94a3b8">...</text>
-    <text x="14" y="162" fill="#15803d" font-family="Segoe UI" font-weight="700">una fila por objeto = lista para sklearn ✓</text>
-  </g>
-</g>
-<text x="380" y="276" text-anchor="middle" fill="#475569" font-size="13">12 características espectrales (media y desviación de 6 bandas) + proporción urbana: el alimento del modelo</text>
+<div class="ibar">
+  <span style="font-size:12.5px;color:#334155;font-weight:700">extrae un objeto:</span>
+  <button class="ibtn on" id="f6bPar" onclick="f6play('parcela')">🌾 parcela</button>
+  <button class="ibtn" id="f6bPre" onclick="f6play('presita')">💧 presita</button>
+  <button class="ibtn" id="f6bUrb" onclick="f6play('manzana')">🏙️ manzana</button>
+  <button class="ibtn" style="margin-left:12px;border-color:#0ea5e9;color:#0369a1" onclick="f6play()">↻ repetir</button>
+</div>
+<svg viewBox="0 0 760 320" role="img" aria-label="Estadistica zonal en vivo: el objeto se recorta de la imagen y se vuelve una fila">
+  <text x="160" y="16" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700">los objetos de la figura 4</text>
+  <g id="f6img" transform="translate(20,26)"></g>
+  <g id="f6hl" transform="translate(20,26)"></g>
+  <text x="545" y="16" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700" id="f6tit"></text>
+  <g id="f6bands"></g>
+  <g id="f6fly"></g>
+  <g id="f6tab" transform="translate(20,222)"></g>
 </svg>
-<figcaption>Cada objeto <b>se vuelve una fila</b>: la imagen queda convertida en una base de datos.</figcaption>
+<div id="f6mor" style="text-align:center;font-size:13px;color:#475569;background:#fff;padding:2px 16px 8px;max-width:690px;margin:0 auto;min-height:20px"></div>
+<span class="try">⬆ la estadística zonal EN VIVO: objeto ∩ imagen → recorte → 6 bandas → una fila (números calculados de verdad)</span>
 </div>
 
 <!-- ════════ 7 · ML (interactivo) ════════ -->
@@ -833,6 +836,147 @@ function segPlay() {
   setTimeout(() => segSet(null, null, 3), 3000);
 }
 function segInit() { segPintaImg(); segRender(); }
+// ---------- figura 6: estadística zonal en vivo (objeto → recorte → bandas → fila) ----------
+const F6CEL = 14;
+let F6SEG = null, f6region = "parcela", f6timers = [];
+function f6bandas(v) {  // pseudo-6-bandas coherentes desde el color (toy didáctico)
+  const [r, g, b] = v, cl = x => Math.max(5, Math.min(255, Math.round(x)));
+  return [cl(b), cl(g), cl(r), cl(g*1.2 - b*0.2), cl(r*0.9 + g*0.4 - b*0.4), cl(r*1.1 - b*0.2)];
+}
+const F6TINTE = ["#60a5fa","#4ade80","#f87171","#b91c1c","#b45309","#7c2d12"];
+const F6NOM = ["b1 azul","b2 verde","b3 rojo","b4 NIR","b5 SWIR1","b6 SWIR2"];
+function f6init() {
+  F6SEG = segElim(segClump(segKmeans(5)).lab, 4);
+  let h = "";
+  for (let i = 0; i < SN; i++) { const r = Math.floor(i/SW), c = i%SW;
+    h += `<rect x="${c*F6CEL}" y="${r*F6CEL}" width="${F6CEL}" height="${F6CEL}" fill="${SEGRGB[i]}"/>`; }
+  let b = "";
+  for (let i = 0; i < SN; i++) { const r = Math.floor(i/SW), c = i%SW;
+    if (c < SW-1 && F6SEG.lab[i] !== F6SEG.lab[i+1]) b += `M${(c+1)*F6CEL},${r*F6CEL} v${F6CEL}`;
+    if (r < SH-1 && F6SEG.lab[i] !== F6SEG.lab[i+SW]) b += `M${c*F6CEL},${(r+1)*F6CEL} h${F6CEL}`; }
+  h += `<path d="${b}" stroke="#facc15" stroke-width="1.6" fill="none"/>`;
+  h += `<rect width="${SW*F6CEL}" height="${SH*F6CEL}" fill="none" stroke="#475569"/>`;
+  document.getElementById("f6img").innerHTML = h;
+  f6play("parcela");
+}
+function f6play(reg) {
+  if (reg) f6region = reg;
+  reg = f6region;
+  f6timers.forEach(clearTimeout); f6timers = [];
+  [["parcela","f6bPar"],["presita","f6bPre"],["manzana","f6bUrb"]].forEach(([k,id]) =>
+    document.getElementById(id).classList.toggle("on", k === reg));
+  const semilla = { parcela: 1*SW + 2, presita: 5*SW + 8, manzana: 8*SW + 15 }[reg];
+  const sid = F6SEG.lab[semilla];
+  const cs = []; for (let i = 0; i < SN; i++) if (F6SEG.lab[i] === sid) cs.push(i);
+  let r0 = 99, c0 = 99, r1 = -1, c1 = -1;
+  for (const p of cs) { const r = Math.floor(p/SW), c = p%SW;
+    if (r < r0) r0 = r; if (r > r1) r1 = r; if (c < c0) c0 = c; if (c > c1) c1 = c; }
+  const bw = c1 - c0 + 1, bh = r1 - r0 + 1;
+  const zoom = Math.max(8, Math.min(26, Math.floor(290/bw), Math.floor(132/bh)));
+  const ox = 380 + Math.max(0, (300 - bw*zoom) / 2), oy = 58 + Math.max(0, (128 - bh*zoom) / 2);
+  const fly = document.getElementById("f6fly"), bands = document.getElementById("f6bands"),
+        tab = document.getElementById("f6tab"), tit = document.getElementById("f6tit"),
+        mor = document.getElementById("f6mor"), hl = document.getElementById("f6hl");
+  bands.innerHTML = ""; fly.innerHTML = ""; tab.innerHTML = "";
+  // 1· el objeto intersecta la imagen (parpadeo)
+  let hh = "";
+  for (const p of cs) { const r = Math.floor(p/SW), c = p%SW;
+    hh += `<rect x="${c*F6CEL}" y="${r*F6CEL}" width="${F6CEL}" height="${F6CEL}" fill="#facc15" opacity="0"><animate attributeName="opacity" values="0;.6;0;.6;0" dur="1.3s"/></rect>`; }
+  hl.innerHTML = hh;
+  tit.textContent = `1· objeto #${sid + 1}: una región de ${cs.length} píxeles`;
+  mor.textContent = "Un objeto de la segmentación ES una región de la imagen. Vamos a intersectarlo y quedarnos solo con sus píxeles.";
+  // 2· extraer: los píxeles vuelan al recorte
+  f6timers.push(setTimeout(() => {
+    tit.textContent = `2· recorte: se extraen sus ${cs.length} píxeles`;
+    mor.textContent = "Objeto ∩ imagen: un recorte con la forma exacta del objeto — nada del alrededor entra al cálculo.";
+    let fh = "";
+    cs.forEach((p, k) => {
+      const r = Math.floor(p/SW), c = p%SW;
+      const sx = 20 + c*F6CEL, sy = 26 + r*F6CEL;
+      const tx = ox + (c - c0)*zoom, ty = oy + (r - r0)*zoom;
+      fh += `<rect x="${tx}" y="${ty}" width="${zoom}" height="${zoom}" fill="${SEGRGB[p]}" stroke="#ffffff" stroke-opacity=".3" stroke-width=".6" style="transform:translate(${sx-tx}px,${sy-ty}px);transition:transform .9s ${Math.min(k*12, 700)}ms cubic-bezier(.4,0,.2,1)"/>`;
+    });
+    fly.innerHTML = fh;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      for (const el of fly.children) el.style.transform = "translate(0,0)";
+    }));
+  }, 1500));
+  // 3· las 6 bandas se abren en abanico detrás del recorte
+  f6timers.push(setTimeout(() => {
+    tit.textContent = "3· cada píxel del recorte trae 6 bandas";
+    mor.textContent = "El recorte no es una capa: son SEIS (azul, verde, rojo, NIR, SWIR1, SWIR2). Cada píxel = un vector de 6 números.";
+    let bb = "";
+    for (let k = 5; k >= 1; k--) {
+      let capa = "";
+      for (const p of cs) { const r = Math.floor(p/SW), c = p%SW;
+        capa += `<rect x="${ox + (c-c0)*zoom}" y="${oy + (r-r0)*zoom}" width="${zoom}" height="${zoom}" fill="${F6TINTE[k]}" stroke="#ffffff" stroke-opacity=".25" stroke-width=".5"/>`; }
+      capa += `<text x="${ox + bw*zoom + 6}" y="${oy + 10}" fill="${F6TINTE[k]}" font-size="10.5" font-weight="700">${F6NOM[k]}</text>`;
+      bb += `<g style="opacity:0;transform:translate(0,0);transition:opacity .45s ${(5-k)*170}ms, transform .45s ${(5-k)*170}ms" data-dx="${k*8}" data-dy="${-k*6}">${capa}</g>`;
+    }
+    bands.innerHTML = bb;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      for (const el of bands.children) {
+        el.style.opacity = ".92";
+        el.style.transform = `translate(${el.dataset.dx}px,${el.dataset.dy}px)`;
+      }
+    }));
+  }, 3300));
+  // 4· condensar en UNA fila (números reales del recorte)
+  f6timers.push(setTimeout(() => {
+    tit.textContent = "4· …y se condensa en UNA fila";
+    mor.textContent = `Media y desviación de cada banda sobre los ${cs.length} píxeles: 12 números + el tamaño. Los ~115 mil objetos del taller = ~115 mil filas.`;
+    const B = cs.map(p => f6bandas(SEGV[p]));
+    const med = [], des = [];
+    for (let j = 0; j < 6; j++) {
+      const m = B.reduce((a, v) => a + v[j], 0) / B.length;
+      med.push(m);
+      des.push(Math.sqrt(B.reduce((a, v) => a + (v[j]-m)**2, 0) / B.length));
+    }
+    const celdaW = 88;
+    let th = `<rect x="0" y="0" width="720" height="84" rx="8" fill="#f8fafc" stroke="#cbd5e1" style="opacity:0;transition:opacity .5s"/>`;
+    th += `<g font-family="Consolas,monospace" style="opacity:0;transition:opacity .5s .15s">`;
+    th += `<text x="14" y="22" fill="#64748b" font-size="11.5">id      n_px${F6NOM.map((n,j)=>`<tspan x="${168+j*celdaW}">${n.split(" ")[0]}Mean</tspan>`).join("")}</text>`;
+    th += `<line x1="10" y1="30" x2="710" y2="30" stroke="#cbd5e1"/>`;
+    th += `<text x="14" y="52" fill="#0f172a" font-size="13" font-weight="700">#${sid + 1}<tspan x="78">${cs.length}</tspan>${med.map((m,j)=>`<tspan x="${168+j*celdaW}">${Math.round(m)}<tspan font-size="9.5" fill="#94a3b8"> ±${Math.round(des[j])}</tspan></tspan>`).join("")}</text>`;
+    th += `<text x="14" y="74" fill="#15803d" font-size="12" font-weight="700" font-family="Segoe UI">este objeto = UNA fila de la tabla ✓   (en el taller: también su prop_urbano y la desviación de cada banda)</text></g>`;
+    tab.innerHTML = th;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      for (const el of tab.children) el.style.opacity = "1";
+    }));
+  }, 4900));
+}
+// ---------- maximizar figuras: modal de pantalla completa ----------
+let modalCell = null, modalPh = null;
+function figAbrir(cell) {
+  if (modalCell) return;
+  const m = document.getElementById("figmodal");
+  modalPh = document.createElement("div"); modalCell = cell;
+  cell.parentNode.insertBefore(modalPh, cell);
+  m.querySelector(".mwrap").appendChild(cell);
+  m.classList.add("abierto");
+  document.body.style.overflow = "hidden";
+}
+function figCerrar() {
+  if (!modalCell) return;
+  modalPh.replaceWith(modalCell);
+  modalCell = null; modalPh = null;
+  document.getElementById("figmodal").classList.remove("abierto");
+  document.body.style.overflow = "";
+}
+function figModalInit() {
+  const m = document.createElement("div");
+  m.id = "figmodal";
+  m.innerHTML = '<button class="mclose" onclick="figCerrar()" aria-label="cerrar" title="cerrar (Esc)">✕</button><div class="mwrap"></div>';
+  m.addEventListener("click", e => { if (e.target === m) figCerrar(); });
+  document.body.appendChild(m);
+  document.addEventListener("keydown", e => { if (e.key === "Escape") figCerrar(); });
+  document.querySelectorAll(".cell.fig").forEach(cell => {
+    const b = document.createElement("button");
+    b.className = "figmax"; b.title = "ver en pantalla completa"; b.textContent = "⛶";
+    b.addEventListener("click", () => figAbrir(cell));
+    cell.appendChild(b);
+  });
+}
 // ---------- figura 7: entrenar ----------
 let training = false;
 function entrenar() {
@@ -911,6 +1055,6 @@ function runNb() {
   }, 2200);
 }
 // init
-buildBarras(); firma("agua"); segInit();
+buildBarras(); firma("agua"); segInit(); f6init(); figModalInit();
 </script>
 </body></html>
