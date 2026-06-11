@@ -586,58 +586,99 @@
 <div class="cell"><span class="gut">[teoría 9]</span>
 <h2><span class="n">9</span>¿Y dónde corre Python? Opción A: tu navegador (WebAssembly)</h2>
 <p>En 2023 este ejercicio exigía instalar Conda, GDAL y RSGISLib — horas de configuración y permisos. Hoy existe <b>WebAssembly (WASM)</b>: un formato que permite ejecutar programas completos <b>dentro del navegador</b>, en una "caja de arena" segura. El proyecto <b>Pyodide</b> compiló Python científico entero a WASM: numpy, rasterio, scikit-learn… corriendo en la pestaña.</p>
-<p>Consecuencias para ti: <b>cero instalación, cero permisos, tus datos no salen de tu equipo</b>, y al cerrar la pestaña no queda rastro.</p>
+<p>¿Es una "caja de arena" <b>de verdad</b>? Sí — y vale la pena entender la anatomía, porque responde todas las dudas prácticas del taller: <b>el servidor solo entrega copias y es de solo lectura</b> (nadie puede escribirle); el Python del taller corre <b>encerrado en la pestaña</b> (no puede ver tu disco C:\ ni tus otras pestañas); tus archivos viven en <b>dos casas distintas</b> — la <i>memoria del kernel</i> (/tmp, que se esfuma al cerrar) y el <i>almacén del navegador</i> (IndexedDB, donde sobrevive TU copia del cuaderno); y entre la pestaña y tu disco hay un muro que <b>solo cruzan los archivos que TÚ subes o descargas con un clic</b>.</p>
+<p>Y la pregunta que todos se hacen tarde o temprano: <b>¿qué pasa si borro TODOS los archivos del explorador del Lab?</b> Pulsa los escenarios de la figura y descúbrelo — la respuesta es liberadora.</p>
 </div>
 <div class="cell fig"><span class="gut">[figura 9]</span>
-<svg viewBox="0 0 760 330" role="img" aria-label="Python en el navegador">
-<!-- laptop -->
-<g transform="translate(165,215)">
-  <path d="M0,40 L170,-45 L340,40 L170,125 Z" fill="#cbd5e1" stroke="#94a3b8"/>
-  <path d="M20,38 L170,-37 L320,38 L170,113 Z" fill="#64748b"/>
-  <g transform="translate(60,-158)">
-    <rect width="220" height="156" rx="8" fill="#ffffff" stroke="#0ea5e9" stroke-width="2.5"/>
-    <rect width="220" height="24" rx="8" fill="#f1f5f9"/>
-    <circle cx="15" cy="12" r="4" fill="#f87171"/><circle cx="29" cy="12" r="4" fill="#fbbf24"/><circle cx="43" cy="12" r="4" fill="#34d399"/>
-    <text x="120" y="16" text-anchor="middle" fill="#64748b" font-size="9.5">tu-curso.github.io · sin instalar nada</text>
-    <g font-family="Consolas,monospace" font-size="9.5" fill="#0369a1">
-      <rect x="10" y="34" width="200" height="20" rx="3" fill="#eef2ff" stroke="#c7d2fe"/>
-      <text x="16" y="47">import rasterio, sklearn ✓</text>
-      <rect x="10" y="60" width="200" height="20" rx="3" fill="#eef2ff" stroke="#c7d2fe"/>
-      <text x="16" y="73">modelo.fit(X, y)</text>
-      <circle cx="200" cy="70" r="4" fill="#f59e0b"><animate attributeName="opacity" values="1;.2;1" dur=".8s" repeatCount="indefinite"/></circle>
-      <rect x="10" y="86" width="200" height="58" rx="3" fill="#f8fafc" stroke="#e2e8f0"/>
-      <g>
-        <rect x="20" y="94" width="40" height="40" fill="#84cc16"><animate attributeName="opacity" values="0;1" dur="2s" repeatCount="indefinite"/></rect>
-        <rect x="64" y="94" width="56" height="40" fill="#e11d48"><animate attributeName="opacity" values="0;0;1" keyTimes="0;.4;1" dur="2s" repeatCount="indefinite"/></rect>
-        <rect x="124" y="94" width="36" height="40" fill="#0ea5e9"><animate attributeName="opacity" values="0;0;0;1" keyTimes="0;.4;.7;1" dur="2s" repeatCount="indefinite"/></rect>
+<div class="ibar">
+  <span style="font-size:12.5px;color:#334155;font-weight:700">escenarios:</span>
+  <button class="ibtn on" id="f9b1" onclick="f9esc(1)">▶ abres el taller</button>
+  <button class="ibtn" id="f9b2" onclick="f9esc(2)">✏️ guardas (Ctrl+S)</button>
+  <button class="ibtn" id="f9b3" onclick="f9esc(3)">❌ cierras la pestaña</button>
+  <button class="ibtn" id="f9b4" onclick="f9esc(4)">🗑️ ¡borras TODO!</button>
+  <button class="ibtn" id="f9b5" onclick="f9esc(5)">🔓 ¿y mi disco C:\?</button>
+</div>
+<svg viewBox="0 0 760 352" role="img" aria-label="Anatomia del sandbox: servidor solo lectura, pestana WASM, almacen del navegador y el muro hacia tu disco">
+<!-- el servidor: solo lectura -->
+<g transform="translate(20,56)">
+  <rect width="140" height="170" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="70" y="-8" text-anchor="middle" fill="#0f172a" font-size="12" font-weight="700">el servidor</text>
+  <text x="70" y="20" text-anchor="middle" fill="#64748b" font-size="9.5">GitHub Pages / kit</text>
+  <g font-size="9.5" fill="#334155" font-family="Consolas,monospace">
+    <rect x="10" y="32" width="120" height="20" rx="4" fill="#fff" stroke="#cbd5e1"/><text x="16" y="45">📄 Taller.ipynb</text>
+    <rect x="10" y="58" width="120" height="20" rx="4" fill="#fff" stroke="#cbd5e1"/><text x="16" y="71">🎬 animaciones</text>
+    <rect x="10" y="84" width="120" height="20" rx="4" fill="#fff" stroke="#cbd5e1"/><text x="16" y="97">🛰 imagen estatal</text>
+  </g>
+  <g transform="translate(70,130)">
+    <rect x="-13" y="-2" width="26" height="20" rx="4" fill="#16a34a"/>
+    <path d="M-7,-2 v-6 a7,7 0 0 1 14,0 v6" fill="none" stroke="#16a34a" stroke-width="3.5"/>
+  </g>
+  <text x="70" y="164" text-anchor="middle" fill="#15803d" font-size="9.5" font-weight="700">SOLO LECTURA: nadie</text>
+  <text x="70" y="176" text-anchor="middle" fill="#15803d" font-size="9.5" font-weight="700">puede escribirle ni dañarlo</text>
+</g>
+<!-- chip viajero servidor -> navegador -->
+<rect id="f9fly" x="470" y="92" width="92" height="18" rx="4" fill="#0ea5e9" opacity="0"
+      style="transition:transform .9s cubic-bezier(.4,0,.2,1), opacity .4s"/>
+<!-- TU navegador -->
+<g transform="translate(190,34)">
+  <rect width="550" height="226" rx="14" fill="none" stroke="#0284c7" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="14" y="-8" fill="#0369a1" font-size="12.5" font-weight="700">TU navegador</text>
+  <!-- la pestaña: sandbox wasm -->
+  <g id="f9sand" transform="translate(18,26)" style="transition:opacity .6s">
+    <rect width="240" height="180" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="120" y="22" text-anchor="middle" fill="#1d4ed8" font-size="11.5" font-weight="700">la pestaña · sandbox WASM</text>
+    <g transform="translate(20,36)">
+      <rect width="200" height="52" rx="8" fill="#fff" stroke="#93c5fd"/>
+      <text x="100" y="22" text-anchor="middle" font-size="11" fill="#1e40af" font-weight="700">🐍 Python (wasm32)</text>
+      <text x="100" y="40" text-anchor="middle" font-size="9.5" fill="#475569">numpy · rasterio · sklearn · shepherd</text>
+    </g>
+    <g id="f9tmp" transform="translate(20,100)" style="transition:opacity .6s">
+      <rect width="200" height="48" rx="8" fill="#fef9c3" stroke="#eab308"/>
+      <text x="100" y="20" text-anchor="middle" font-size="10.5" fill="#854d0e" font-weight="700">💾 /tmp · memoria del kernel</text>
+      <text x="100" y="37" text-anchor="middle" font-size="9.5" fill="#854d0e">la imagen (176 MB) vive aquí</text>
+    </g>
+    <text id="f9poof" x="120" y="105" text-anchor="middle" font-size="26" opacity="0" style="transition:opacity .5s">💨</text>
+  </g>
+  <!-- almacén del navegador -->
+  <g id="f9idb" transform="translate(286,26)">
+    <rect width="246" height="180" rx="10" fill="#faf5ff" stroke="#9333ea" stroke-width="2" id="f9idbBox" style="transition:stroke-width .4s"/>
+    <text x="123" y="22" text-anchor="middle" fill="#7e22ce" font-size="11.5" font-weight="700">almacén del navegador</text>
+    <text x="123" y="36" text-anchor="middle" fill="#a855f7" font-size="9.5">(IndexedDB · sobrevive a recargas)</text>
+    <g id="f9nb" style="transition:opacity .6s">
+      <rect x="20" y="48" width="206" height="26" rx="5" fill="#fff" stroke="#d8b4fe"/>
+      <text x="30" y="65" font-size="10" fill="#334155" font-family="Consolas,monospace">📄 TU copia del cuaderno</text>
+      <g id="f9badge" style="transition:opacity .5s" opacity="0">
+        <rect x="148" y="42" width="86" height="16" rx="8" fill="#7c3aed"/>
+        <text x="191" y="54" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">✏️ TU versión</text>
       </g>
     </g>
+    <g id="f9out" style="transition:opacity .6s">
+      <rect x="20" y="84" width="206" height="26" rx="5" fill="#fff" stroke="#d8b4fe"/>
+      <text x="30" y="101" font-size="10" fill="#334155" font-family="Consolas,monospace">🗂 tus salidas y archivos</text>
+    </g>
+    <text x="123" y="140" text-anchor="middle" font-size="9.5" fill="#7e22ce">solo TU navegador, TU perfil:</text>
+    <text x="123" y="153" text-anchor="middle" font-size="9.5" fill="#7e22ce">nadie más lo ve</text>
+    <text id="f9fenix" x="123" y="170" text-anchor="middle" font-size="10.5" fill="#16a34a" font-weight="700" opacity="0" style="transition:opacity .5s">↻ restaurado desde el servidor ✓</text>
   </g>
 </g>
-<!-- paquetes -->
-<g font-size="10.5" font-family="Consolas,monospace" text-anchor="middle">
-  <g><rect x="-34" y="-10" width="68" height="20" rx="5" fill="#2563eb"/><text y="4" fill="#fff">numpy</text>
-     <animateMotion path="M 78 60 C 150 60, 180 50, 245 75" dur="2.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="2.6s" repeatCount="indefinite"/></g>
-  <g><rect x="-38" y="-10" width="76" height="20" rx="5" fill="#0e7490"/><text y="4" fill="#fff">rasterio</text>
-     <animateMotion path="M 86 125 C 160 115, 190 90, 250 100" dur="2.6s" begin=".9s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="2.6s" begin=".9s" repeatCount="indefinite"/></g>
-  <g><rect x="-38" y="-10" width="76" height="20" rx="5" fill="#7c3aed"/><text y="4" fill="#fff">sklearn</text>
-     <animateMotion path="M 82 190 C 150 180, 200 135, 252 127" dur="2.6s" begin="1.8s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="2.6s" begin="1.8s" repeatCount="indefinite"/></g>
+<!-- el muro hacia tu disco -->
+<g transform="translate(190,282)">
+  <g id="f9muro">
+    <rect width="550" height="10" fill="#b91c1c" opacity=".85"/>
+    <g fill="#fecaca"><rect x="22" y="2" width="36" height="6"/><rect x="92" y="2" width="36" height="6"/><rect x="162" y="2" width="36" height="6"/><rect x="232" y="2" width="36" height="6"/><rect x="372" y="2" width="36" height="6"/><rect x="442" y="2" width="36" height="6"/><rect x="512" y="2" width="36" height="6"/></g>
+  </g>
+  <g transform="translate(320,-18)">
+    <rect x="-20" y="0" width="40" height="30" rx="5" fill="#f0fdf4" stroke="#16a34a"/>
+    <text x="0" y="13" text-anchor="middle" font-size="9.5" fill="#15803d" font-weight="700">⬆⬇</text>
+    <text x="0" y="24" text-anchor="middle" font-size="8" fill="#15803d" font-weight="700">TU clic</text>
+  </g>
+  <text id="f9no" x="130" y="-6" text-anchor="middle" font-size="22" font-weight="800" fill="#e11d48" opacity="0" style="transition:opacity .4s">⛔</text>
+  <rect width="550" height="40" y="14" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="275" y="38" text-anchor="middle" fill="#475569" font-size="11.5" font-weight="700">tu disco (C:\) — el sandbox NO puede verlo ni tocarlo</text>
 </g>
-<!-- nube tachada + candado -->
-<g transform="translate(620,84)">
-  <ellipse cx="0" cy="0" rx="54" ry="27" fill="#f1f5f9" stroke="#cbd5e1"/>
-  <text x="0" y="5" text-anchor="middle" fill="#64748b" font-size="11.5">la nube</text>
-  <line x1="-48" y1="-23" x2="48" y2="23" stroke="#e11d48" stroke-width="4"/>
-  <text x="0" y="48" text-anchor="middle" fill="#be123c" font-size="11.5" font-weight="700">tus datos NO viajan</text>
-</g>
-<g transform="translate(625,212)">
-  <rect x="-16" y="-6" width="32" height="26" rx="5" fill="#16a34a"/>
-  <path d="M-9,-6 v-7 a9,9 0 0 1 18,0 v7" fill="none" stroke="#16a34a" stroke-width="4"/>
-  <text x="0" y="44" text-anchor="middle" fill="#15803d" font-size="11.5" font-weight="700">WASM = caja de arena</text>
-</g>
-<text x="380" y="320" text-anchor="middle" fill="#475569" font-size="13">el laboratorio completo vive dentro de la pestaña — de "instala Conda" a "abre esta URL"</text>
 </svg>
-<figcaption>Pyodide: Python científico compilado a WebAssembly. La ciencia es la misma; la fricción desapareció.</figcaption>
+<div id="f9mor" style="text-align:center;font-size:13px;color:#475569;background:#fff;padding:4px 16px 8px;max-width:700px;margin:0 auto;min-height:34px"></div>
+<span class="try">⬆ pulsa los 5 escenarios — el último responde la gran pregunta: borrar TODO no rompe nada</span>
 </div>
 
 <!-- ════════ 10 · PORTABLE ════════ -->
@@ -1259,6 +1300,49 @@ function animPulse(id, pts, delay) {
     }, 220);
   }, delay);
 }
+// ---------- figura 9: anatomía del sandbox ----------
+let f9timers = [];
+function f9op(id, v) { document.getElementById(id).style.opacity = v; }
+function f9esc(n) {
+  f9timers.forEach(clearTimeout); f9timers = [];
+  for (let i = 1; i <= 5; i++)
+    document.getElementById("f9b" + i).classList.toggle("on", i === n);
+  // estado base
+  f9op("f9sand", 1); f9op("f9tmp", 1); f9op("f9poof", 0);
+  f9op("f9nb", 1); f9op("f9out", 1); f9op("f9badge", 0);
+  f9op("f9fenix", 0); f9op("f9no", 0);
+  const fly = document.getElementById("f9fly");
+  fly.style.transition = "none"; fly.style.opacity = "0"; fly.style.transform = "translate(-430px,-30px)";
+  void fly.getBoundingClientRect();
+  fly.style.transition = "transform .9s cubic-bezier(.4,0,.2,1), opacity .4s";
+  document.getElementById("f9idbBox").style.strokeWidth = "2";
+  const mor = document.getElementById("f9mor");
+  if (n === 1) {
+    f9op("f9nb", 0); f9op("f9out", 0);
+    f9timers.push(setTimeout(() => { fly.style.opacity = "1"; fly.style.transform = "translate(0,0)"; }, 200));
+    f9timers.push(setTimeout(() => { fly.style.opacity = "0"; f9op("f9nb", 1); }, 1300));
+    mor.textContent = "El servidor entrega UNA copia de los originales y ahí termina su papel. Desde este momento trabajas sobre TU copia, dentro de tu navegador. El servidor es de solo lectura: jamás se entera de lo que haces.";
+  } else if (n === 2) {
+    f9timers.push(setTimeout(() => { f9op("f9badge", 1);
+      document.getElementById("f9idbBox").style.strokeWidth = "4"; }, 300));
+    mor.textContent = "Ctrl+S guarda en el ALMACÉN DEL NAVEGADOR (IndexedDB) — no en C:\\, no en el servidor. Por eso tu copia sobrevive a recargas, por eso nadie más la ve… y por eso, si publicamos una versión nueva del cuaderno, tu navegador seguirá mostrándote la TUYA.";
+  } else if (n === 3) {
+    f9timers.push(setTimeout(() => { f9op("f9sand", .18); f9op("f9tmp", .08); f9op("f9poof", 1); }, 300));
+    f9timers.push(setTimeout(() => {
+      document.getElementById("f9idbBox").style.strokeWidth = "4"; }, 800));
+    mor.textContent = "Al cerrar la pestaña, el sandbox y su memoria (/tmp — incluida la imagen de 176 MB) se esfuman 💨. Pero el almacén del navegador SOBREVIVE: al volver mañana, tu cuaderno guardado te estará esperando. Memoria efímera, almacén persistente.";
+  } else if (n === 4) {
+    f9timers.push(setTimeout(() => { f9op("f9nb", 0); f9op("f9out", 0); f9op("f9badge", 0); }, 300));
+    f9timers.push(setTimeout(() => { fly.style.opacity = "1"; fly.style.transform = "translate(0,0)"; }, 1100));
+    f9timers.push(setTimeout(() => { fly.style.opacity = "0"; f9op("f9nb", 1); f9op("f9fenix", 1); }, 2100));
+    mor.textContent = "¡La gran pregunta! Borraste TODO en el explorador del Lab… y no rompiste nada: solo borraste TUS copias. El origen es de solo lectura e intacto — al recargar la página, el Lab restaura los originales. Borrar todo = restaurar de fábrica. Experimenta sin miedo.";
+  } else {
+    f9timers.push(setTimeout(() => f9op("f9no", 1), 200));
+    f9timers.push(setTimeout(() => f9op("f9no", 0), 900));
+    f9timers.push(setTimeout(() => f9op("f9no", 1), 1400));
+    mor.textContent = "El sandbox WASM NO puede ver tu disco: ni leerlo ni escribirlo ni listarlo. La única puerta es la compuerta verde: archivos que TÚ subes (⬆) o descargas (⬇) con un clic explícito. Eso es lo que significa 'caja de arena' de verdad — y por eso este taller es seguro para cualquier oficina.";
+  }
+}
 // ---------- figura 8: cuaderno ----------
 let nbRunning = false;
 function runNb() {
@@ -1282,6 +1366,6 @@ function runNb() {
   }, 2200);
 }
 // init
-buildBarras(); firma("agua"); segInit(); f5init(); f6init(); buildVec12(); figModalInit();
+buildBarras(); firma("agua"); segInit(); f5init(); f6init(); buildVec12(); f9esc(1); figModalInit();
 </script>
 </body></html>
