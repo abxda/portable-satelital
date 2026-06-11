@@ -70,9 +70,14 @@
              box-shadow:0 2px 10px rgba(15,23,42,.18)}
   #animPausa:hover{opacity:1}
   #animPausa.pausado{background:#0ea5e9;color:#fff;border-color:#0284c7;opacity:1}
+  #geomapa{height:460px;border-radius:10px;background:#f1f5f9;border:1px solid #cbd5e1}
+  #figmodal #geomapa{height:86vh}
+  #gmAnio{font:600 13px "Segoe UI";padding:6px 10px;border-radius:9px;border:1.5px solid #cbd5e1;
+          background:#f8fafc;color:#0f172a;cursor:pointer;margin:0 4px}
   footer{color:var(--dim);font-size:13px;text-align:center;margin-top:46px;line-height:1.7}
   @media (max-width:780px){.gut{display:none}.cell{padding:20px 18px}}
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 </head>
 <body><div class="wrap">
 
@@ -237,7 +242,7 @@
 <li><b>La geomediana de cada píxel</b> (Roberts et al., 2017): el punto del espacio espectral que <b>minimiza la distancia a todas las observaciones</b>. No se puede despejar con una fórmula: se <i>camina</i> hacia ella con el <b>algoritmo de Weiszfeld</b> — arranca en el promedio y da pasos de promedio pesado (peso = 1/distancia) hasta converger. Crucial: opera sobre <b>las 6 bandas A LA VEZ</b>, así que <b>preserva las relaciones entre bandas</b> — por eso el resultado sirve para NDVI, NDBI y aprendizaje automático, que viven de esas relaciones.</li>
 <li><b>El mosaico:</b> los píxeles compuestos se integran en tiles de 5000×5000 y se ensamblan con GDAL — consistencia espacial incluso entre escenas.</li>
 </ol>
-<div class="quote">La geomediana de cada píxel es el punto del espacio espectral que <b>minimiza la distancia a todas las observaciones del año</b>. A diferencia del promedio, una nube no la arrastra.</div>
+<div class="quote">La geomediana de cada píxel es el punto del espacio espectral que <b>minimiza la distancia a todas las observaciones del año</b>. A diferencia del promedio, los datos atípicos apenas la desplazan.</div>
 <p>La del taller es la <code>GM_AGS_2020.tif</code>, geomediana Sentinel-2 (<a href="https://doi.org/10.5281/zenodo.6908357" target="_blank">Coronado et al., 2022 — datos abiertos en Zenodo</a>); la metodología nacional está en el <a href="https://www.inegi.org.mx/contenidos/productos/prod_serv/contenidos/espanol/bvinegi/productos/nueva_estruc/702825198763.pdf" target="_blank">documento metodológico de INEGI (2020)</a>.</p>
 </div>
 <div class="cell fig"><span class="gut">[figura 3]</span>
@@ -331,7 +336,7 @@
   <g><circle cx="330" cy="56" r="8" fill="#e2e8f0" stroke="#94a3b8"/>
      <text x="330" y="40" text-anchor="middle" fill="#64748b" font-size="10.5">☁ ruido que escapó a la máscara</text></g>
   <circle cx="182" cy="107" r="7" fill="#3b82f6" stroke="#1d4ed8" stroke-width="2"/>
-  <text x="196" y="98" fill="#1d4ed8" font-size="10.5">promedio (jalado por la nube)</text>
+  <text x="196" y="98" fill="#1d4ed8" font-size="10.5">promedio: afectado por datos atípicos</text>
   <!-- el camino de Weiszfeld: del promedio a la geomediana -->
   <path d="M182,107 L160,116 L148,122 L141,126" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="4 4"/>
   <circle cx="160" cy="116" r="3" fill="#fbbf24"/><circle cx="148" cy="122" r="3" fill="#fbbf24"/>
@@ -363,6 +368,20 @@
 <text x="380" y="492" text-anchor="middle" fill="#64748b" font-size="11">Geomediana Nacional INEGI (Cubo de Datos): +118 mil escenas Landsat desde 1984 · 6 bandas a 30 m — las mismas de tu taller · cómputo ≈ 24 h · 35 GB</text>
 </svg>
 <figcaption>El pipeline completo de la geomediana — INEGI (2020), <i>documento metodológico de la Geomediana Nacional</i>; algoritmo de Roberts, Mueller &amp; McIntyre (2017).</figcaption>
+</div>
+<div class="cell fig"><span class="gut">[figura 3b]</span>
+<div class="ibar">
+  <span style="font-size:12.5px;color:#334155;font-weight:700">período:</span>
+  <select id="gmAnio" onchange="gmCapa()"></select>
+  <button class="ibtn on" id="gmV1" onclick="gmVis('colornatural', 'gmV1')">🌈 color natural</button>
+  <button class="ibtn" id="gmV2" onclick="gmVis('falsocolor', 'gmV2')">🌿 falso color</button>
+  <button class="ibtn" id="gmV3" onclick="gmVis('infrarrojo', 'gmV3')">🔥 infrarrojo</button>
+</div>
+<div id="geomapa"></div>
+<div style="text-align:center;font-size:12px;color:#475569;background:#fff;padding:8px 16px 4px;max-width:700px;margin:0 auto">
+🛰️ Estás navegando las <b>geomedianas Landsat oficiales de México (1984–2024)</b>, servidas <b>en vivo</b> desde los servidores del INEGI (servicio WMS público). Fuente y cita: INEGI, <a href="https://www.inegi.org.mx/programas/geomediana/#mapas" target="_blank">Geomediana — Cubo de Datos Geoespaciales de México</a>.
+</div>
+<span class="try">⬆ viaja en el tiempo: elige un período, cambia la visualización, acércate a tu ciudad — y maximízalo con ⛶ para la clase</span>
 </div>
 
 <!-- ════════ 4 · SEGMENTACIÓN (interactivo) ════════ -->
@@ -927,6 +946,7 @@ Edición interactiva y figuras: <b>abxda × Claude</b> · <a href="https://githu
 </footer>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 "use strict";
 // ---------- figura 2: firmas espectrales ----------
@@ -1339,6 +1359,38 @@ function f5alinear() {
     ? "Cada celda preguntó si su centro cae dentro del polígono. La máscara ya habla idioma píxel."
     : "La máscara encimada sobre la imagen: encaja píxel a píxel porque comparten la MISMA malla. Esa alineación exacta es lo que permite contar píxeles urbanos dentro de cada objeto.";
 }
+// ---------- figura 3b: navegador de geomedianas INEGI (WMS en vivo) ----------
+let gmMapa = null, gmWms = null, gmVisActual = "colornatural";
+const GM_PERIODOS = ["1984-1989", "1990-1992"].concat(
+  Array.from({ length: 32 }, (_, i) => String(1993 + i)));
+function gmCapaNombre() {
+  return `Sitio_Inegi:gm_${gmVisActual}_${document.getElementById("gmAnio").value}`;
+}
+function gmInit() {
+  const sel = document.getElementById("gmAnio");
+  sel.innerHTML = GM_PERIODOS.map(p =>
+    `<option value="${p}"${p === "2020" ? " selected" : ""}>${p}</option>`).join("");
+  const div = document.getElementById("geomapa");
+  if (!window.L) {
+    div.innerHTML = '<div style="padding:60px 20px;text-align:center;color:#64748b;font-size:13px">' +
+      'El mapa en vivo necesita internet.<br/>Visítalo en ' +
+      '<a href="https://www.inegi.org.mx/programas/geomediana/#mapas" target="_blank">inegi.org.mx/programas/geomediana</a></div>';
+    return;
+  }
+  gmMapa = L.map("geomapa", { center: [21.88, -102.3], zoom: 9, minZoom: 5, maxZoom: 15 });
+  gmWms = L.tileLayer.wms("https://mapas.inegi.org.mx/geoserver/wms", {
+    layers: gmCapaNombre(), format: "image/png", transparent: false,
+    attribution: 'Geomediana Landsat © <a href="https://www.inegi.org.mx/programas/geomediana/" target="_blank">INEGI</a>'
+  });
+  gmWms.addTo(gmMapa);
+}
+function gmCapa() { if (gmWms) gmWms.setParams({ layers: gmCapaNombre() }); }
+function gmVis(v, id) {
+  gmVisActual = v;
+  ["gmV1", "gmV2", "gmV3"].forEach(b =>
+    document.getElementById(b).classList.toggle("on", b === id));
+  gmCapa();
+}
 // ---------- pausa global de animaciones (para explicar en clase) ----------
 let animPausado = false;
 function animToggle() {
@@ -1371,13 +1423,16 @@ function figAbrir(cell) {
   m.querySelector(".mwrap").appendChild(cell);
   m.classList.add("abierto");
   document.body.style.overflow = "hidden";
+  if (gmMapa && cell.querySelector("#geomapa")) setTimeout(() => gmMapa.invalidateSize(), 90);
 }
 function figCerrar() {
   if (!modalCell) return;
+  const teniaMapa = gmMapa && modalCell.querySelector("#geomapa");
   modalPh.replaceWith(modalCell);
   modalCell = null; modalPh = null;
   document.getElementById("figmodal").classList.remove("abierto");
   document.body.style.overflow = "";
+  if (teniaMapa) setTimeout(() => gmMapa.invalidateSize(), 90);
 }
 function figModalInit() {
   const m = document.createElement("div");
@@ -1560,6 +1615,6 @@ function runNb() {
   }, 2200);
 }
 // init
-buildBarras(); firma("agua"); segInit(); f5init(); f6init(); buildVec12(); f9esc(1); figModalInit(); animPausaInit();
+buildBarras(); firma("agua"); segInit(); f5init(); f6init(); buildVec12(); f9esc(1); gmInit(); figModalInit(); animPausaInit();
 </script>
 </body></html>
