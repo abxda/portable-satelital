@@ -376,12 +376,14 @@
   <button class="ibtn on" id="gmV1" onclick="gmVis('colornatural', 'gmV1')">🌈 color natural</button>
   <button class="ibtn" id="gmV2" onclick="gmVis('falsocolor', 'gmV2')">🌿 falso color</button>
   <button class="ibtn" id="gmV3" onclick="gmVis('infrarrojo', 'gmV3')">🔥 infrarrojo</button>
+  <button class="ibtn" id="gmVS" onclick="gmComparar()" style="margin-left:10px;border-color:#7c3aed;color:#6d28d9">🆚 comparar años</button>
+  <select id="gmAnio2" onchange="gmCapa2()" style="display:none"></select>
 </div>
 <div id="geomapa"></div>
 <div style="text-align:center;font-size:12px;color:#475569;background:#fff;padding:8px 16px 4px;max-width:700px;margin:0 auto">
 🛰️ Estás navegando las <b>geomedianas Landsat oficiales de México (1984–2024)</b>, servidas <b>en vivo</b> desde los servidores del INEGI (servicio WMS público). Fuente y cita: INEGI, <a href="https://www.inegi.org.mx/programas/geomediana/#mapas" target="_blank">Geomediana — Cubo de Datos Geoespaciales de México</a>.
 </div>
-<span class="try">⬆ viaja en el tiempo: elige un período, cambia la visualización, acércate a tu ciudad — y maximízalo con ⛶ para la clase</span>
+<span class="try">⬆ viaja en el tiempo: elige un período, cambia la visualización, acércate a tu ciudad — activa 🆚 y desliza la cortina para comparar dos años — y maximízalo con ⛶ para la clase</span>
 </div>
 
 <!-- ════════ 4 · SEGMENTACIÓN (interactivo) ════════ -->
@@ -947,6 +949,7 @@ Edición interactiva y figuras: <b>abxda × Claude</b> · <a href="https://githu
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="./leaflet-side-by-side.js"></script>
 <script>
 "use strict";
 // ---------- figura 2: firmas espectrales ----------
@@ -1360,16 +1363,18 @@ function f5alinear() {
     : "La máscara encimada sobre la imagen: encaja píxel a píxel porque comparten la MISMA malla. Esa alineación exacta es lo que permite contar píxeles urbanos dentro de cada objeto.";
 }
 // ---------- figura 3b: navegador de geomedianas INEGI (WMS en vivo) ----------
-let gmMapa = null, gmWms = null, gmVisActual = "colornatural";
+let gmMapa = null, gmWms = null, gmWms2 = null, gmCmp = null, gmVisActual = "colornatural";
+const GM_URL = "https://mapas.inegi.org.mx/geoserver/wms";
 const GM_PERIODOS = ["1984-1989", "1990-1992"].concat(
   Array.from({ length: 32 }, (_, i) => String(1993 + i)));
-function gmCapaNombre() {
-  return `Sitio_Inegi:gm_${gmVisActual}_${document.getElementById("gmAnio").value}`;
-}
+function gmNombre(periodo) { return `Sitio_Inegi:gm_${gmVisActual}_${periodo}`; }
+function gmCapaNombre() { return gmNombre(document.getElementById("gmAnio").value); }
 function gmInit() {
   const sel = document.getElementById("gmAnio");
   sel.innerHTML = GM_PERIODOS.map(p =>
     `<option value="${p}"${p === "2020" ? " selected" : ""}>${p}</option>`).join("");
+  document.getElementById("gmAnio2").innerHTML = GM_PERIODOS.map(p =>
+    `<option value="${p}"${p === "1984-1989" ? " selected" : ""}>${p}</option>`).join("");
   const div = document.getElementById("geomapa");
   if (!window.L) {
     div.innerHTML = '<div style="padding:60px 20px;text-align:center;color:#64748b;font-size:13px">' +
@@ -1385,11 +1390,30 @@ function gmInit() {
   gmWms.addTo(gmMapa);
 }
 function gmCapa() { if (gmWms) gmWms.setParams({ layers: gmCapaNombre() }); }
+function gmCapa2() {
+  if (gmWms2) gmWms2.setParams({ layers: gmNombre(document.getElementById("gmAnio2").value) });
+}
 function gmVis(v, id) {
   gmVisActual = v;
   ["gmV1", "gmV2", "gmV3"].forEach(b =>
     document.getElementById(b).classList.toggle("on", b === id));
-  gmCapa();
+  gmCapa(); gmCapa2();
+}
+function gmComparar() {
+  if (!gmMapa) return;
+  const btn = document.getElementById("gmVS"), sel2 = document.getElementById("gmAnio2");
+  if (gmCmp) {                              // apagar la comparación
+    gmMapa.removeControl(gmCmp); gmCmp = null;
+    gmMapa.removeLayer(gmWms2); gmWms2 = null;
+    btn.classList.remove("on"); sel2.style.display = "none";
+    return;
+  }
+  sel2.style.display = "";
+  gmWms2 = L.tileLayer.wms(GM_URL, {
+    layers: gmNombre(sel2.value), format: "image/png", transparent: false
+  }).addTo(gmMapa);
+  gmCmp = L.control.sideBySide(gmWms, gmWms2).addTo(gmMapa);
+  btn.classList.add("on");
 }
 // ---------- pausa global de animaciones (para explicar en clase) ----------
 let animPausado = false;

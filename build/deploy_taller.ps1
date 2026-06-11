@@ -55,6 +55,7 @@ $mojibake = [string][char]0xC3                 # firma tipica de UTF-8 leido com
 if (-not $check.Contains($acentuada)) { throw "encoding roto: falta texto acentuado" }
 if ($check.Contains($mojibake + [char]0x83)) { throw "encoding roto: mojibake detectado" }
 Copy-Item (Join-Path $Wasm "web\teoria.html") $Site
+Copy-Item (Join-Path $Wasm "web\leaflet-side-by-side.js") $Site
 
 # sanity: el index final DEBE tener el bloque
 if ((Get-Content (Join-Path $Site "index.html") -Raw) -notmatch "jupyter-config-data") {
