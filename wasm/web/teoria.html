@@ -64,6 +64,12 @@
   .mclose{position:fixed;top:8px;right:14px;width:38px;height:38px;border:none;background:none;
           font-size:22px;line-height:1;color:#94a3b8;cursor:pointer;opacity:.45;z-index:61;padding:0}
   .mclose:hover{opacity:.95}
+  #animPausa{position:fixed;right:16px;bottom:16px;width:46px;height:46px;border-radius:50%;
+             border:1.5px solid #cbd5e1;background:rgba(255,255,255,.95);color:#0f172a;
+             font-size:17px;line-height:1;cursor:pointer;z-index:70;opacity:.75;
+             box-shadow:0 2px 10px rgba(15,23,42,.18)}
+  #animPausa:hover{opacity:1}
+  #animPausa.pausado{background:#0ea5e9;color:#fff;border-color:#0284c7;opacity:1}
   footer{color:var(--dim);font-size:13px;text-align:center;margin-top:46px;line-height:1.7}
   @media (max-width:780px){.gut{display:none}.cell{padding:20px 18px}}
 </style>
@@ -793,6 +799,64 @@
   <a class="btn ghost" href="./index.html">⟵ Portada</a>
 </div>
 </div>
+<div class="cell fig"><span class="gut">[figura 11]</span>
+<svg viewBox="0 0 760 340" role="img" aria-label="El viaje completo del taller: ocho estaciones de la luz del Sol al mapa estatal">
+<text x="380" y="24" text-anchor="middle" fill="#0f172a" font-size="14" font-weight="700">el viaje completo: de la luz del Sol al mapa de decisión</text>
+<!-- la vía -->
+<path id="via11" d="M105,86 L645,86 C715,86 715,236 645,236 L105,236" fill="none" stroke="#cbd5e1" stroke-width="3" stroke-dasharray="1 9" stroke-linecap="round"/>
+<!-- estaciones -->
+<g text-anchor="middle">
+  <g transform="translate(105,86)">
+    <circle r="24" fill="#fef9c3" stroke="#eab308" stroke-width="2"/><text y="7" font-size="19">☀️</text>
+    <circle r="24" fill="none" stroke="#eab308" stroke-width="3"><animate attributeName="r" values="24;33;24" keyTimes="0;.06;.12" dur="16s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0;0" keyTimes="0;.12;1" dur="16s" repeatCount="indefinite"/></circle>
+    <text y="44" font-size="10.5" font-weight="700" fill="#334155">luz y firmas</text><text y="57" font-size="9" fill="#94a3b8">teoría 1–2</text>
+  </g>
+  <g transform="translate(285,86)">
+    <circle r="24" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/><text y="7" font-size="19">🧪</text>
+    <circle r="24" fill="none" stroke="#16a34a" stroke-width="3"><animate attributeName="r" values="24;24;33;24" keyTimes="0;.13;.19;.25" dur="16s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0;0" keyTimes="0;.13;.25;1" dur="16s" repeatCount="indefinite"/></circle>
+    <text y="44" font-size="10.5" font-weight="700" fill="#334155">geomediana sin nubes</text><text y="57" font-size="9" fill="#94a3b8">teoría 3</text>
+  </g>
+  <g transform="translate(465,86)">
+    <circle r="24" fill="#eff6ff" stroke="#2563eb" stroke-width="2"/><text y="7" font-size="19">🛰️</text>
+    <circle r="24" fill="none" stroke="#2563eb" stroke-width="3"><animate attributeName="r" values="24;24;33;24" keyTimes="0;.25;.31;.37" dur="16s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0;0" keyTimes="0;.25;.37;1" dur="16s" repeatCount="indefinite"/></circle>
+    <text y="44" font-size="10.5" font-weight="700" fill="#334155">calidad Landsat 30 m</text><text y="57" font-size="9" fill="#94a3b8">todo el estado · 176 MB</text>
+  </g>
+  <g transform="translate(645,86)">
+    <circle r="24" fill="#fefce8" stroke="#ca8a04" stroke-width="2"/><text y="7" font-size="19">🧩</text>
+    <circle r="24" fill="none" stroke="#ca8a04" stroke-width="3"><animate attributeName="r" values="24;24;33;24" keyTimes="0;.37;.43;.49" dur="16s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0;0" keyTimes="0;.37;.49;1" dur="16s" repeatCount="indefinite"/></circle>
+    <text y="44" font-size="10.5" font-weight="700" fill="#334155">segmentación Shepherd</text><text y="57" font-size="9" fill="#94a3b8">teoría 4 · ~115 mil objetos</text>
+  </g>
+  <g transform="translate(645,236)">
+    <circle r="24" fill="#fff7ed" stroke="#f97316" stroke-width="2"/><text y="7" font-size="19">🏷️</text>
+    <circle r="24" fill="none" stroke="#f97316" stroke-width="3"><animate attributeName="r" values="24;24;33;24" keyTimes="0;.5;.56;.62" dur="16s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0;0" keyTimes="0;.5;.62;1" dur="16s" repeatCount="indefinite"/></circle>
+    <text y="44" font-size="10.5" font-weight="700" fill="#334155">etiquetas INEGI → píxel</text><text y="57" font-size="9" fill="#94a3b8">teoría 5 · linaje vivo</text>
+  </g>
+  <g transform="translate(465,236)">
+    <circle r="24" fill="#faf5ff" stroke="#9333ea" stroke-width="2"/><text y="7" font-size="19">📋</text>
+    <circle r="24" fill="none" stroke="#9333ea" stroke-width="3"><animate attributeName="r" values="24;24;33;24" keyTimes="0;.62;.68;.74" dur="16s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0;0" keyTimes="0;.62;.74;1" dur="16s" repeatCount="indefinite"/></circle>
+    <text y="44" font-size="10.5" font-weight="700" fill="#334155">tabla de objetos</text><text y="57" font-size="9" fill="#94a3b8">teoría 6 · una fila c/u</text>
+  </g>
+  <g transform="translate(285,236)">
+    <circle r="24" fill="#eef2ff" stroke="#6366f1" stroke-width="2"/><text y="7" font-size="19">🤖</text>
+    <circle r="24" fill="none" stroke="#6366f1" stroke-width="3"><animate attributeName="r" values="24;24;33;24" keyTimes="0;.74;.8;.86" dur="16s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0;0" keyTimes="0;.74;.86;1" dur="16s" repeatCount="indefinite"/></circle>
+    <text y="44" font-size="10.5" font-weight="700" fill="#334155">stacking MLP + árboles</text><text y="57" font-size="9" fill="#94a3b8">teoría 7 · examen 70/30</text>
+  </g>
+  <g transform="translate(105,236)">
+    <circle r="26" fill="#fef2f2" stroke="#d62728" stroke-width="2.5"/><text y="7" font-size="19">🗺️</text>
+    <circle r="26" fill="none" stroke="#d62728" stroke-width="3"><animate attributeName="r" values="26;26;36;26" keyTimes="0;.87;.93;.99" dur="16s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0;0" keyTimes="0;.87;.99;1" dur="16s" repeatCount="indefinite"/></circle>
+    <text y="46" font-size="10.5" font-weight="700" fill="#334155">mapa urbano estatal</text><text y="59" font-size="9" fill="#94a3b8">+ 4 productos para QGIS</text>
+  </g>
+</g>
+<!-- el tren: tu recorrido -->
+<g>
+  <circle r="8" fill="#0ea5e9" stroke="#fff" stroke-width="2"><animateMotion dur="16s" repeatCount="indefinite"><mpath href="#via11"/></animateMotion></circle>
+  <circle r="14" fill="none" stroke="#0ea5e9" stroke-width="2" opacity=".4"><animateMotion dur="16s" repeatCount="indefinite"><mpath href="#via11"/></animateMotion><animate attributeName="r" values="10;17;10" dur="1.2s" repeatCount="indefinite"/></circle>
+</g>
+<text x="380" y="172" text-anchor="middle" fill="#475569" font-size="12">cada estación es una sección de esta página — y una o dos celdas del cuaderno</text>
+<text x="380" y="325" text-anchor="middle" fill="#0f172a" font-size="12.5" font-weight="700">en el navegador hoy · en el portable cuando tu institución lo autorice · con TUS datos cuando quieras</text>
+</svg>
+<figcaption>El método completo de un vistazo: síguelo aquí, ejecútalo en el taller, repítelo con tu territorio.</figcaption>
+</div>
 
 <footer>
 Basado en <i>«Machine Learning para detectar zonas urbanas en imágenes Sentinel-2»</i> — Abel Alejandro Coronado Iruegas, Ph.D. (2023).<br/>
@@ -1213,6 +1277,28 @@ function f5alinear() {
     ? "Cada celda preguntó si su centro cae dentro del polígono. La máscara ya habla idioma píxel."
     : "La máscara encimada sobre la imagen: encaja píxel a píxel porque comparten la MISMA malla. Esa alineación exacta es lo que permite contar píxeles urbanos dentro de cada objeto.";
 }
+// ---------- pausa global de animaciones (para explicar en clase) ----------
+let animPausado = false;
+function animToggle() {
+  animPausado = !animPausado;
+  document.querySelectorAll("svg").forEach(s => {
+    try { animPausado ? s.pauseAnimations() : s.unpauseAnimations(); } catch (e) {}
+  });
+  const b = document.getElementById("animPausa");
+  b.textContent = animPausado ? "▶" : "⏸";
+  b.title = animPausado ? "reanudar animaciones (tecla P)" : "pausar animaciones (tecla P)";
+  b.classList.toggle("pausado", animPausado);
+}
+function animPausaInit() {
+  const b = document.createElement("button");
+  b.id = "animPausa"; b.textContent = "⏸";
+  b.title = "pausar animaciones (tecla P)";
+  b.addEventListener("click", animToggle);
+  document.body.appendChild(b);
+  document.addEventListener("keydown", e => {
+    if ((e.key === "p" || e.key === "P") && !e.ctrlKey && !e.metaKey && !e.altKey) animToggle();
+  });
+}
 // ---------- maximizar figuras: modal de pantalla completa ----------
 let modalCell = null, modalPh = null;
 function figAbrir(cell) {
@@ -1412,6 +1498,6 @@ function runNb() {
   }, 2200);
 }
 // init
-buildBarras(); firma("agua"); segInit(); f5init(); f6init(); buildVec12(); f9esc(1); figModalInit();
+buildBarras(); firma("agua"); segInit(); f5init(); f6init(); buildVec12(); f9esc(1); figModalInit(); animPausaInit();
 </script>
 </body></html>
