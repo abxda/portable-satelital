@@ -1414,6 +1414,31 @@ function gmComparar() {
   }).addTo(gmMapa);
   gmCmp = L.control.sideBySide(gmWms, gmWms2).addTo(gmMapa);
   btn.classList.add("on");
+  gmFijaCortina();
+}
+function gmFijaCortina() {
+  // al sujetar la cortina, el mapa de fondo debe quedar FIJO: sin esto, el
+  // arrastre se propaga al mapa y panea las imágenes en vez de mover el slider
+  for (const sel of [".leaflet-sbs-range", ".leaflet-sbs-divider"]) {
+    const el = document.querySelector(sel);
+    if (!el) continue;
+    L.DomEvent.disableClickPropagation(el);
+    for (const ev of ["mousedown", "touchstart", "pointerdown"])
+      el.addEventListener(ev, () => {
+        gmMapa.dragging.disable();
+        if (gmMapa.tap) gmMapa.tap.disable();
+      }, { passive: true });
+  }
+  if (!gmFijaCortina.global) {
+    gmFijaCortina.global = true;
+    for (const ev of ["mouseup", "touchend", "pointerup"])
+      document.addEventListener(ev, () => {
+        if (gmMapa) {
+          gmMapa.dragging.enable();
+          if (gmMapa.tap) gmMapa.tap.enable();
+        }
+      }, { passive: true });
+  }
 }
 // ---------- pausa global de animaciones (para explicar en clase) ----------
 let animPausado = false;
