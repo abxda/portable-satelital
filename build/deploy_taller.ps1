@@ -56,7 +56,7 @@ if (-not $check.Contains($acentuada)) { throw "encoding roto: falta texto acentu
 if ($check.Contains($mojibake + [char]0x83)) { throw "encoding roto: mojibake detectado" }
 Copy-Item (Join-Path $Wasm "web\teoria.html") $Site
 Copy-Item (Join-Path $Wasm "web\leaflet-side-by-side.js") $Site
-Copy-Item (Join-Path $Wasm "web\inegi_logo.png") $Site
+Copy-Item (Join-Path $Wasm "web\snieg_logo.png") $Site
 
 # sanity: el index final DEBE tener el bloque
 if ((Get-Content (Join-Path $Site "index.html") -Raw) -notmatch "jupyter-config-data") {
