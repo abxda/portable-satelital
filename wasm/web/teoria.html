@@ -473,7 +473,7 @@ Dirección General Adjunta de Investigación · Laboratorio de Ciencia de Datos<
   <button class="ibtn" id="f6bUrb" onclick="f6play('manzana')">🏙️ manzana</button>
   <button class="ibtn" style="margin-left:12px;border-color:#0ea5e9;color:#0369a1" onclick="f6play()">↻ repetir</button>
 </div>
-<svg viewBox="0 0 760 444" role="img" aria-label="Estadistica zonal en vivo: cada banda es una pila de numeros que una agregacion resume en un valor">
+<svg viewBox="0 0 760 408" role="img" aria-label="Estadistica zonal en vivo: cada banda es una pila de numeros que una agregacion resume en un valor">
   <text x="160" y="16" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700">los objetos de la figura 4</text>
   <g id="f6img" transform="translate(20,26)"></g>
   <g id="f6hl" transform="translate(20,26)"></g>
@@ -1278,16 +1278,16 @@ function f6play(reg) {
     const mn = Math.min(...arr), mx = Math.max(...arr);
     const med6 = [0,1,2,3,4,5].map(j => cs.reduce((a, p) => a + f6bandas(SEGV[p])[j]/255, 0) / N);
     // mini-grilla de NIR con los numeritos por pixel
-    const mz = Math.max(14, Math.min(20, Math.floor(140 / bw), Math.floor(88 / bh)));
+    const mz = Math.max(13, Math.min(19, Math.floor(120 / bw), Math.floor(84 / bh)));
     let grid = "";
     for (const p of cs) {
       const r = Math.floor(p/SW) - r0, c = p%SW - c0, v = f6bandas(SEGV[p])[BJ]/255;
       grid += `<rect x="${14+c*mz}" y="${46+r*mz}" width="${mz}" height="${mz}" fill="#b91c1c" fill-opacity="${(0.16+0.7*v).toFixed(2)}" stroke="#fff" stroke-width=".5"/>`;
       grid += `<text x="${14+c*mz+mz/2}" y="${46+r*mz+mz/2+3}" text-anchor="middle" font-size="${(mz*0.36).toFixed(1)}" fill="${v>0.5?'#fff':'#7f1d1d'}" font-family="Consolas,monospace">${v.toFixed(2)}</text>`;
     }
-    // llave + Σ + caja: posicionados JUNTO a la grilla (sin hueco grande)
+    // llave + Σ + caja: pegados a la grilla (sin hueco grande)
     const gR = 14 + bw * mz;                        // borde derecho de la grilla
-    const bx = gR + 10, sx = bx + 24, resX = sx + 56;
+    const bx = gR + 8, sx = bx + 22, resX = sx + 50;
     const res = [["Σ suma", suma.toFixed(2), "#475569"],
                  ["μ media", media.toFixed(2), "#15803d"],
                  ["σ² var", varz.toFixed(3), "#475569"],
@@ -1295,38 +1295,40 @@ function f6play(reg) {
                  ["máx", mx.toFixed(2), "#475569"]];
     let rl = "";
     res.forEach(([k, val, col], i) => {
-      const yy = 62 + i * 19, bold = col === "#15803d";
-      rl += `<text x="${resX+12}" y="${yy}" font-size="11" font-family="Consolas,monospace" fill="${col}"${bold?' font-weight="700"':''}>${k}</text>` +
-            `<text x="${resX+138}" y="${yy}" text-anchor="end" font-size="11" font-family="Consolas,monospace" fill="${col}"${bold?' font-weight="700"':''}>${val}</text>`;
+      const yy = 60 + i * 18, bold = col === "#15803d";
+      rl += `<text x="${resX+11}" y="${yy}" font-size="10.5" font-family="Consolas,monospace" fill="${col}"${bold?' font-weight="700"':''}>${k}</text>` +
+            `<text x="${resX+129}" y="${yy}" text-anchor="end" font-size="10.5" font-family="Consolas,monospace" fill="${col}"${bold?' font-weight="700"':''}>${val}</text>`;
     });
-    let th = `<rect x="0" y="0" width="720" height="212" rx="8" fill="#f8fafc" stroke="#cbd5e1" style="opacity:0;transition:opacity .5s"/>`;
+    let th = `<rect x="0" y="0" width="720" height="172" rx="8" fill="#f8fafc" stroke="#cbd5e1" style="opacity:0;transition:opacity .5s"/>`;
     th += `<g style="opacity:0;transition:opacity .5s .15s">`;
-    th += `<text x="14" y="22" fill="#0f172a" font-size="12.5" font-weight="700">una banda = una pila de números → la agregación la resume en un valor</text>`;
-    th += `<text x="14" y="40" fill="#b91c1c" font-size="10.5" font-weight="700">banda NIR · ${N} píxeles · intensidad 0–1</text>`;
+    th += `<text x="14" y="20" fill="#0f172a" font-size="12.5" font-weight="700">una banda = una pila de números → la agregación la resume en un valor</text>`;
+    th += `<text x="14" y="38" fill="#b91c1c" font-size="10" font-weight="700">banda NIR · ${N} píxeles · 0–1</text>`;
     th += grid;
-    th += `<text x="${bx}" y="106" font-size="44" fill="#cbd5e1">}</text>`;
-    th += `<text x="${sx}" y="98" font-size="28" font-weight="800" fill="#7c3aed" font-family="Georgia,serif">Σ</text>`;
-    th += `<text x="${sx-2}" y="118" font-size="10" fill="#7c3aed" font-weight="700">agregar</text>`;
-    th += `<path d="M${sx+26},94 h26" stroke="#7c3aed" stroke-width="2.5"/><path d="M${sx+52},94 l-8,-5 v10 Z" fill="#7c3aed"/>`;
-    th += `<rect x="${resX}" y="46" width="150" height="104" rx="6" fill="#ffffff" stroke="#cbd5e1"/>`;
+    th += `<text x="${bx}" y="100" font-size="40" fill="#cbd5e1">}</text>`;
+    th += `<text x="${sx}" y="92" font-size="26" font-weight="800" fill="#7c3aed" font-family="Georgia,serif">Σ</text>`;
+    th += `<text x="${sx-2}" y="110" font-size="9.5" fill="#7c3aed" font-weight="700">agregar</text>`;
+    th += `<path d="M${sx+24},88 h22" stroke="#7c3aed" stroke-width="2.5"/><path d="M${sx+46},88 l-8,-5 v10 Z" fill="#7c3aed"/>`;
+    th += `<rect x="${resX}" y="44" width="140" height="92" rx="6" fill="#ffffff" stroke="#cbd5e1"/>`;
     th += rl;
-    th += `<text x="${resX+75}" y="166" text-anchor="middle" fill="#334155" font-size="10" font-weight="700">esto, para las 6 bandas ↓</text>`;
-    // ----- la fila como un DataFrame (estilo pandas), ancho completo -----
-    const cols = ["n_px","b1Mean","b2Mean","b3Mean","b4Mean","b5Mean","b6Mean"];
+    // flecha "× 6 bandas" hacia el DataFrame del extremo derecho
+    th += `<path d="M${resX+148},88 h${476-(resX+148)-8}" stroke="#0ea5e9" stroke-width="2.5"/><path d="M468,88 l-8,-5 v10 Z" fill="#0ea5e9"/>`;
+    th += `<text x="${(resX+148+468)/2}" y="80" text-anchor="middle" fill="#0369a1" font-size="9.5" font-weight="700">× 6 bandas</text>`;
+    // ----- la fila como un DataFrame pequeño, en el extremo derecho -----
+    const cols = ["n_px","b1","b2","b3","b4","b5","b6"];
     const vals = [String(N)].concat(med6.map(m => m.toFixed(2)));
-    const x0 = 10, hy = 176, ry = 200, idW = 52, cW = (700 - idW) / cols.length;
-    let df = `<rect x="${x0}" y="${hy}" width="700" height="36" rx="4" fill="#ffffff" stroke="#cbd5e1"/>`;
-    df += `<rect x="${x0}" y="${hy}" width="700" height="17" fill="#eef2f6"/>`;            // banda de encabezado
-    df += `<line x1="${x0+idW}" y1="${hy}" x2="${x0+idW}" y2="${ry+12}" stroke="#e2e8f0"/>`;  // separador del índice
-    df += `<text x="${x0+idW/2}" y="${hy+12}" text-anchor="middle" font-size="9" fill="#94a3b8" font-family="Consolas,monospace"></text>`;
-    df += `<text x="${x0+idW/2}" y="${ry+4}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#0f172a" font-family="Consolas,monospace">#${sid+1}</text>`;
+    const dfX = 476, dfTop = 54, dfW = 236, idW = 26, cW = (dfW - idW) / cols.length;
+    let df = `<text x="${dfX}" y="${dfTop-6}" fill="#15803d" font-size="9.5" font-weight="700">la fila → DataFrame</text>`;
+    df += `<rect x="${dfX}" y="${dfTop}" width="${dfW}" height="40" rx="4" fill="#ffffff" stroke="#cbd5e1"/>`;
+    df += `<rect x="${dfX}" y="${dfTop}" width="${dfW}" height="16" fill="#eef2f6"/>`;
+    df += `<line x1="${dfX+idW}" y1="${dfTop}" x2="${dfX+idW}" y2="${dfTop+40}" stroke="#e2e8f0"/>`;
+    df += `<text x="${dfX+idW/2}" y="${dfTop+32}" text-anchor="middle" font-size="9.5" font-weight="700" fill="#0f172a" font-family="Consolas,monospace">#${sid+1}</text>`;
     cols.forEach((cn, j) => {
-      const cx = x0 + idW + j * cW;
-      if (j) df += `<line x1="${cx}" y1="${hy}" x2="${cx}" y2="${ry+12}" stroke="#eef2f6"/>`;
-      df += `<text x="${cx+cW/2}" y="${hy+12}" text-anchor="middle" font-size="9" fill="#475569" font-family="Consolas,monospace" font-weight="700">${cn}</text>`;
-      df += `<text x="${cx+cW/2}" y="${ry+4}" text-anchor="middle" font-size="10.5" fill="#0f172a" font-family="Consolas,monospace">${vals[j]}</text>`;
+      const cx = dfX + idW + j * cW;
+      if (j) df += `<line x1="${cx}" y1="${dfTop}" x2="${cx}" y2="${dfTop+40}" stroke="#eef2f6"/>`;
+      df += `<text x="${cx+cW/2}" y="${dfTop+11}" text-anchor="middle" font-size="8" fill="#475569" font-family="Consolas,monospace" font-weight="700">${cn}</text>`;
+      df += `<text x="${cx+cW/2}" y="${dfTop+32}" text-anchor="middle" font-size="9" fill="#0f172a" font-family="Consolas,monospace">${vals[j]}</text>`;
     });
-    df += `<text x="710" y="${hy-4}" text-anchor="end" font-size="9.5" fill="#15803d" font-weight="700">DataFrame · 1 fila por objeto ✓</text>`;
+    df += `<text x="${dfX}" y="${dfTop+58}" fill="#475569" font-size="9">b1–b6 = media de cada banda · 1 fila por objeto ✓</text>`;
     th += df;
     th += `</g>`;
     tab.innerHTML = th;
