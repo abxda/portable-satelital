@@ -84,6 +84,14 @@
              box-shadow:0 2px 10px rgba(15,23,42,.18)}
   #animPausa:hover{opacity:1}
   #animPausa.pausado{background:#0ea5e9;color:#fff;border-color:#0284c7;opacity:1}
+  .cell.portada{border:none;box-shadow:none;background:transparent;padding:0 30px}
+  #figNav{position:fixed;right:16px;bottom:74px;z-index:1500;display:none;gap:8px}
+  #figNav.show{display:flex}
+  #figNav button{width:46px;height:46px;border-radius:50%;border:1.5px solid #cbd5e1;
+             background:rgba(255,255,255,.95);color:#0f172a;font-size:19px;line-height:1;
+             cursor:pointer;opacity:.85;box-shadow:0 2px 10px rgba(15,23,42,.18);padding:0}
+  #figNav button:hover{opacity:1}
+  #figNav button:disabled{opacity:.28;cursor:default}
   #geomapa{height:460px;border-radius:10px;background:#f1f5f9;border:1px solid #cbd5e1}
   #figmodal #geomapa{height:86vh}
   #gmAnio{font:600 13px "Segoe UI";padding:6px 10px;border-radius:9px;border:1.5px solid #cbd5e1;
@@ -100,9 +108,11 @@
   <a href="./index.html">⟵ Portada del curso</a>
   <img src="./snieg_logo.png" alt="Sistema Nacional de Información Estadística y Geográfica (SNIEG)" style="height:42px;opacity:.92"/>
 </div>
+<div class="cell portada"><span class="gut">[portada]</span>
 <h1>🤖 Machine Learning para detectar zonas urbanas</h1>
 <div class="sub">La teoría del taller, desde cero — percepción remota, geomediana, objetos, aprendizaje automático, y las dos plataformas donde lo ejecutarás.</div>
 <div class="sub" style="font-size:13.5px">Basado en el artículo de <b>Abel Alejandro Coronado Iruegas, Ph.D.</b> (2023) · edición interactiva del curso</div>
+</div>
 
 <!-- ════════ 1 · PERCEPCIÓN REMOTA ════════ -->
 <div class="cell"><span class="gut">[teoría 1]</span>
@@ -1492,8 +1502,8 @@ function animPausaInit() {
     if ((e.key === "p" || e.key === "P") && !e.ctrlKey && !e.metaKey && !e.altKey) animToggle();
   });
 }
-// ---------- maximizar figuras: modal de pantalla completa ----------
-let modalCell = null, modalPh = null;
+// ---------- maximizar figuras: modal de pantalla completa + navegación ----------
+let modalCell = null, modalPh = null, figCells = [];
 function figAbrir(cell) {
   if (modalCell) return;
   const m = document.getElementById("figmodal");
@@ -1502,6 +1512,8 @@ function figAbrir(cell) {
   m.querySelector(".mwrap").appendChild(cell);
   m.classList.add("abierto");
   document.body.style.overflow = "hidden";
+  m.querySelector(".mwrap").scrollTop = 0;
+  figNavSync();
   if (gmMapa && cell.querySelector("#geomapa")) setTimeout(() => gmMapa.invalidateSize(), 90);
 }
 function figCerrar() {
@@ -1510,8 +1522,24 @@ function figCerrar() {
   modalPh.replaceWith(modalCell);
   modalCell = null; modalPh = null;
   document.getElementById("figmodal").classList.remove("abierto");
+  document.getElementById("figNav").classList.remove("show");
   document.body.style.overflow = "";
   if (teniaMapa) setTimeout(() => gmMapa.invalidateSize(), 90);
+}
+function figNav(dir) {
+  if (!modalCell) return;
+  const i = figCells.indexOf(modalCell) + dir;
+  if (i < 0 || i >= figCells.length) return;
+  const destino = figCells[i];
+  figCerrar();
+  figAbrir(destino);
+}
+function figNavSync() {
+  const nav = document.getElementById("figNav");
+  nav.classList.add("show");
+  const i = figCells.indexOf(modalCell);
+  nav.querySelector("[data-dir='-1']").disabled = (i <= 0);
+  nav.querySelector("[data-dir='1']").disabled = (i >= figCells.length - 1);
 }
 function figModalInit() {
   const m = document.createElement("div");
@@ -1525,7 +1553,20 @@ function figModalInit() {
     if (e.target === m || e.target.classList.contains("mwrap")) figCerrar();
   });
   document.body.appendChild(m);
-  document.addEventListener("keydown", e => { if (e.key === "Escape") figCerrar(); });
+  // botones anterior/siguiente (slideshow), arriba del botón de pausa
+  const nav = document.createElement("div");
+  nav.id = "figNav";
+  nav.innerHTML =
+    '<button data-dir="-1" onclick="figNav(-1)" title="anterior (←)" aria-label="anterior">‹</button>' +
+    '<button data-dir="1" onclick="figNav(1)" title="siguiente (→)" aria-label="siguiente">›</button>';
+  document.body.appendChild(nav);
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") figCerrar();
+    if (!modalCell) return;
+    if (e.key === "ArrowRight" || e.key === "PageDown") { e.preventDefault(); figNav(1); }
+    if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); figNav(-1); }
+  });
+  figCells = Array.from(document.querySelectorAll(".cell"));
   document.querySelectorAll(".cell").forEach(cell => {
     const b = document.createElement("button");
     b.className = "figmax"; b.title = "ver en pantalla completa"; b.textContent = "⛶";
