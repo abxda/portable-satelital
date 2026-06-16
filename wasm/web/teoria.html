@@ -1313,8 +1313,9 @@ function f6play(reg) {
     // flecha "× 6 bandas" hacia el DataFrame del extremo derecho
     th += `<path d="M${resX+148},88 h${476-(resX+148)-8}" stroke="#0ea5e9" stroke-width="2.5"/><path d="M468,88 l-8,-5 v10 Z" fill="#0ea5e9"/>`;
     th += `<text x="${(resX+148+468)/2}" y="80" text-anchor="middle" fill="#0369a1" font-size="9.5" font-weight="700">× 6 bandas</text>`;
+    th += `<text x="${(resX+148+468)/2}" y="102" text-anchor="middle" fill="#94a3b8" font-size="8.5">μ · σ² · mín · máx</text>`;
     // ----- la fila como un DataFrame pequeño, en el extremo derecho -----
-    const cols = ["n_px","b1","b2","b3","b4","b5","b6"];
+    const cols = ["n_px","b1μ","b2μ","b3μ","b4μ","b5μ","b6μ"];
     const vals = [String(N)].concat(med6.map(m => m.toFixed(2)));
     const dfX = 476, dfTop = 54, dfW = 236, idW = 26, cW = (dfW - idW) / cols.length;
     let df = `<text x="${dfX}" y="${dfTop-6}" fill="#15803d" font-size="9.5" font-weight="700">la fila → DataFrame</text>`;
@@ -1328,7 +1329,7 @@ function f6play(reg) {
       df += `<text x="${cx+cW/2}" y="${dfTop+11}" text-anchor="middle" font-size="8" fill="#475569" font-family="Consolas,monospace" font-weight="700">${cn}</text>`;
       df += `<text x="${cx+cW/2}" y="${dfTop+32}" text-anchor="middle" font-size="9" fill="#0f172a" font-family="Consolas,monospace">${vals[j]}</text>`;
     });
-    df += `<text x="${dfX}" y="${dfTop+58}" fill="#475569" font-size="9">b1–b6 = media de cada banda · 1 fila por objeto ✓</text>`;
+    df += `<text x="${dfX}" y="${dfTop+58}" fill="#475569" font-size="9">b1μ…b6μ = media de cada banda · 1 fila por objeto ✓</text>`;
     th += df;
     th += `</g>`;
     tab.innerHTML = th;
