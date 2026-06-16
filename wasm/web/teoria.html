@@ -99,6 +99,17 @@
   #gmAnio{font:600 13px "Segoe UI";padding:6px 10px;border-radius:9px;border:1.5px solid #cbd5e1;
           background:#f8fafc;color:#0f172a;cursor:pointer;margin:0 4px}
   footer{color:var(--dim);font-size:13px;text-align:center;margin-top:46px;line-height:1.7}
+  .f6-extra{margin:14px auto 2px;max-width:730px}
+  .f6-extra .lbl{font-size:12px;color:#0369a1;font-weight:700;text-align:center;margin-bottom:7px}
+  .f6-extra .scroll{overflow-x:auto}
+  .f6-extra table{border-collapse:collapse;font:11px Consolas,monospace;margin:0 auto}
+  .f6-extra th{background:#eef2f6;color:#475569;font-weight:700;padding:4px 8px;border:1px solid #e2e8f0;white-space:nowrap}
+  .f6-extra td{padding:4px 8px;border:1px solid #eef2f6;text-align:right;color:#0f172a;white-space:nowrap}
+  .f6-extra td.idx{font-weight:700;text-align:center;color:#0f172a}
+  .f6-extra td.obj{text-align:left}
+  .f6-extra td.sig{color:#94a3b8}
+  .f6-extra tbody tr:nth-child(even){background:#f8fafc}
+  .f6-extra .nota{font-size:11px;color:#475569;text-align:center;margin-top:6px}
   @media (max-width:780px){.gut{display:none}.cell{padding:20px 18px}}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -484,6 +495,11 @@ Dirección General Adjunta de Investigación · Laboratorio de Ciencia de Datos<
 </svg>
 <div id="f6mor" style="text-align:center;font-size:13px;color:#475569;background:#fff;padding:2px 16px 8px;max-width:690px;margin:0 auto;min-height:20px"></div>
 <span class="try">⬆ la estadística zonal EN VIVO: objeto ∩ imagen → recorte → 6 pilas de números → Σ agregación → una fila (números calculados de verdad)</span>
+<div class="f6-extra">
+  <div class="lbl">⬇ y así se ve la tabla COMPLETA — un renglón por objeto, más métricas (media μ y desviación σ de cada banda)</div>
+  <div class="scroll"><table id="f6full"></table></div>
+  <div class="nota">cada objeto es una fila; en el taller real son ~115 mil filas × (μ y σ de 6 bandas) — el insumo del modelo</div>
+</div>
 </div>
 
 <!-- ════════ 7 · ML (interactivo) ════════ -->
@@ -1189,7 +1205,29 @@ function f6init() {
   h += `<path d="${b}" stroke="#facc15" stroke-width="1.6" fill="none"/>`;
   h += `<rect width="${SW*F6CEL}" height="${SH*F6CEL}" fill="none" stroke="#475569"/>`;
   document.getElementById("f6img").innerHTML = h;
+  f6tabla();
   f6play("parcela");
+}
+function f6tabla() {
+  const objs = [["🌾 parcela", 1*SW + 2], ["💧 presita", 5*SW + 8], ["🏙 manzana", 8*SW + 15]];
+  let head = "<thead><tr><th></th><th>objeto</th><th>n_px</th>";
+  for (let j = 0; j < 6; j++) head += `<th>b${j+1}μ</th><th>b${j+1}σ</th>`;
+  head += "</tr></thead>";
+  let body = "<tbody>";
+  for (const [nom, seed] of objs) {
+    const sid = F6SEG.lab[seed];
+    const cs = []; for (let i = 0; i < SN; i++) if (F6SEG.lab[i] === sid) cs.push(i);
+    const N = cs.length;
+    let row = `<tr><td class="idx">#${sid+1}</td><td class="obj">${nom}</td><td>${N}</td>`;
+    for (let j = 0; j < 6; j++) {
+      const vals = cs.map(p => f6bandas(SEGV[p])[j] / 255);
+      const m = vals.reduce((a, x) => a + x, 0) / N;
+      const sd = Math.sqrt(vals.reduce((a, x) => a + (x - m) ** 2, 0) / N);
+      row += `<td>${m.toFixed(2)}</td><td class="sig">${sd.toFixed(2)}</td>`;
+    }
+    body += row + "</tr>";
+  }
+  document.getElementById("f6full").innerHTML = head + body + "</tbody>";
 }
 function f6play(reg) {
   if (reg) f6region = reg;
