@@ -473,17 +473,17 @@ Dirección General Adjunta de Investigación · Laboratorio de Ciencia de Datos<
   <button class="ibtn" id="f6bUrb" onclick="f6play('manzana')">🏙️ manzana</button>
   <button class="ibtn" style="margin-left:12px;border-color:#0ea5e9;color:#0369a1" onclick="f6play()">↻ repetir</button>
 </div>
-<svg viewBox="0 0 760 320" role="img" aria-label="Estadistica zonal en vivo: el objeto se recorta de la imagen y se vuelve una fila">
+<svg viewBox="0 0 760 410" role="img" aria-label="Estadistica zonal en vivo: cada banda es una pila de numeros que una agregacion resume en un valor">
   <text x="160" y="16" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700">los objetos de la figura 4</text>
   <g id="f6img" transform="translate(20,26)"></g>
   <g id="f6hl" transform="translate(20,26)"></g>
   <text x="545" y="16" text-anchor="middle" fill="#0f172a" font-size="13" font-weight="700" id="f6tit"></text>
   <g id="f6bands"></g>
   <g id="f6fly"></g>
-  <g id="f6tab" transform="translate(20,222)"></g>
+  <g id="f6tab" transform="translate(20,224)"></g>
 </svg>
 <div id="f6mor" style="text-align:center;font-size:13px;color:#475569;background:#fff;padding:2px 16px 8px;max-width:690px;margin:0 auto;min-height:20px"></div>
-<span class="try">⬆ la estadística zonal EN VIVO: objeto ∩ imagen → recorte → 6 bandas → una fila (números calculados de verdad)</span>
+<span class="try">⬆ la estadística zonal EN VIVO: objeto ∩ imagen → recorte → 6 pilas de números → Σ agregación → una fila (números calculados de verdad)</span>
 </div>
 
 <!-- ════════ 7 · ML (interactivo) ════════ -->
@@ -1235,8 +1235,8 @@ function f6play(reg) {
   }, 1500));
   // 3· las 6 bandas se abren en abanico (b1 al frente, sobre el recorte)
   f6timers.push(setTimeout(() => {
-    tit.textContent = "3· cada píxel del recorte trae 6 bandas";
-    mor.textContent = "El recorte no es una capa: son SEIS — azul, verde, rojo, NIR, SWIR1, SWIR2. Cada píxel = un vector de 6 números.";
+    tit.textContent = "3· cada banda es una PILA de números";
+    mor.textContent = "El recorte no es una capa: son SEIS pilas (azul, verde, rojo, NIR, SWIR1, SWIR2). Cada píxel aporta a cada banda un número: su intensidad, normalizada entre 0 y 1.";
     let bb = "";
     for (let k = 5; k >= 1; k--) {
       let capa = "";
@@ -1265,24 +1265,59 @@ function f6play(reg) {
       if (b1g) b1g.style.opacity = ".6";
     }));
   }, 3300));
-  // 4· condensar en UNA fila (números reales del recorte)
+  // 4· agregación: la pila de números de una banda → Σ → un solo valor
   f6timers.push(setTimeout(() => {
-    tit.textContent = "4· …y se condensa en UNA fila";
-    mor.textContent = `Media y desviación de cada banda sobre los ${cs.length} píxeles: 12 números + el tamaño. Los ~115 mil objetos del taller = ~115 mil filas.`;
-    const B = cs.map(p => f6bandas(SEGV[p]));
-    const med = [], des = [];
-    for (let j = 0; j < 6; j++) {
-      const m = B.reduce((a, v) => a + v[j], 0) / B.length;
-      med.push(m);
-      des.push(Math.sqrt(B.reduce((a, v) => a + (v[j]-m)**2, 0) / B.length));
+    tit.textContent = "4· la agregación (Σ) resume cada pila en un valor";
+    mor.textContent = "Cada banda es una colección de números (intensidad 0–1 por píxel). Una agregación —suma, media, varianza, mínimo o máximo— colapsa esa pila en un solo valor por banda. Así el objeto entero cabe en UNA fila.";
+    const BJ = 3;                                  // banda NIR como ejemplo
+    const arr = cs.map(p => f6bandas(SEGV[p])[BJ] / 255);
+    const N = arr.length;
+    const suma = arr.reduce((a, x) => a + x, 0);
+    const media = suma / N;
+    const varz = arr.reduce((a, x) => a + (x - media) ** 2, 0) / N;
+    const mn = Math.min(...arr), mx = Math.max(...arr);
+    const med6 = [0,1,2,3,4,5].map(j => cs.reduce((a, p) => a + f6bandas(SEGV[p])[j]/255, 0) / N);
+    // mini-grilla de NIR con los numeritos por pixel
+    const mz = Math.max(15, Math.min(22, Math.floor(150 / bw), Math.floor(96 / bh)));
+    let grid = "";
+    for (const p of cs) {
+      const r = Math.floor(p/SW) - r0, c = p%SW - c0, v = f6bandas(SEGV[p])[BJ]/255;
+      grid += `<rect x="${14+c*mz}" y="${46+r*mz}" width="${mz}" height="${mz}" fill="#b91c1c" fill-opacity="${(0.16+0.7*v).toFixed(2)}" stroke="#fff" stroke-width=".5"/>`;
+      grid += `<text x="${14+c*mz+mz/2}" y="${46+r*mz+mz/2+3}" text-anchor="middle" font-size="${(mz*0.36).toFixed(1)}" fill="${v>0.5?'#fff':'#7f1d1d'}" font-family="Consolas,monospace">${v.toFixed(2)}</text>`;
     }
-    const celdaW = 88;
-    let th = `<rect x="0" y="0" width="720" height="84" rx="8" fill="#f8fafc" stroke="#cbd5e1" style="opacity:0;transition:opacity .5s"/>`;
-    th += `<g font-family="Consolas,monospace" style="opacity:0;transition:opacity .5s .15s">`;
-    th += `<text x="14" y="22" fill="#64748b" font-size="11.5">id      n_px${F6NOM.map((n,j)=>`<tspan x="${168+j*celdaW}">${n.split(" ")[0]}Mean</tspan>`).join("")}</text>`;
-    th += `<line x1="10" y1="30" x2="710" y2="30" stroke="#cbd5e1"/>`;
-    th += `<text x="14" y="52" fill="#0f172a" font-size="13" font-weight="700">#${sid + 1}<tspan x="78">${cs.length}</tspan>${med.map((m,j)=>`<tspan x="${168+j*celdaW}">${Math.round(m)}<tspan font-size="9.5" fill="#94a3b8"> ±${Math.round(des[j])}</tspan></tspan>`).join("")}</text>`;
-    th += `<text x="14" y="74" fill="#15803d" font-size="12" font-weight="700" font-family="Segoe UI">este objeto = UNA fila de la tabla ✓   (en el taller: también su prop_urbano y la desviación de cada banda)</text></g>`;
+    const res = [["Σ suma", suma.toFixed(2), "#475569"],
+                 ["μ media", media.toFixed(2), "#15803d"],
+                 ["σ² var", varz.toFixed(3), "#475569"],
+                 ["mín", mn.toFixed(2), "#475569"],
+                 ["máx", mx.toFixed(2), "#475569"]];
+    let rl = "";
+    res.forEach(([k, val, col], i) => {
+      const yy = 64 + i * 21, bold = col === "#15803d";
+      rl += `<text x="372" y="${yy}" font-size="11.5" font-family="Consolas,monospace" fill="${col}"${bold?' font-weight="700"':''}>${k}</text>` +
+            `<text x="500" y="${yy}" text-anchor="end" font-size="11.5" font-family="Consolas,monospace" fill="${col}"${bold?' font-weight="700"':''}>${val}</text>`;
+    });
+    let th = `<rect x="0" y="0" width="720" height="182" rx="8" fill="#f8fafc" stroke="#cbd5e1" style="opacity:0;transition:opacity .5s"/>`;
+    th += `<g style="opacity:0;transition:opacity .5s .15s">`;
+    th += `<text x="14" y="22" fill="#0f172a" font-size="12.5" font-weight="700">una banda = una pila de números → la agregación la resume en un valor</text>`;
+    th += `<text x="14" y="40" fill="#b91c1c" font-size="10.5" font-weight="700">banda NIR · ${N} píxeles · intensidad 0–1</text>`;
+    th += grid;
+    // llave + sigma
+    th += `<text x="250" y="108" font-size="46" fill="#cbd5e1">}</text>`;
+    th += `<text x="300" y="100" font-size="30" font-weight="800" fill="#7c3aed" font-family="Georgia,serif">Σ</text>`;
+    th += `<text x="300" y="120" font-size="10" fill="#7c3aed" font-weight="700">agregar</text>`;
+    th += `<path d="M326,96 h32" stroke="#7c3aed" stroke-width="2.5"/><path d="M358,96 l-8,-5 v10 Z" fill="#7c3aed"/>`;
+    // caja de resultados
+    th += `<rect x="362" y="46" width="152" height="118" rx="6" fill="#ffffff" stroke="#cbd5e1"/>`;
+    th += rl;
+    // flecha a la fila
+    th += `<path d="M524,104 h26" stroke="#0ea5e9" stroke-width="2.5"/><path d="M550,104 l-8,-5 v10 Z" fill="#0ea5e9"/>`;
+    th += `<text x="562" y="60" fill="#334155" font-size="10.5" font-weight="700">× 6 bandas →</text>`;
+    th += `<text x="562" y="74" fill="#334155" font-size="10.5" font-weight="700">la fila del objeto:</text>`;
+    th += `<rect x="560" y="84" width="152" height="58" rx="6" fill="#f0fdf4" stroke="#16a34a"/>`;
+    th += `<text x="570" y="102" font-size="9.5" font-family="Consolas,monospace" fill="#0f172a">#${sid+1}  [${med6.slice(0,3).map(m=>m.toFixed(2)).join(" ")}</text>`;
+    th += `<text x="570" y="116" font-size="9.5" font-family="Consolas,monospace" fill="#0f172a">     ${med6.slice(3).map(m=>m.toFixed(2)).join(" ")}]</text>`;
+    th += `<text x="636" y="136" text-anchor="middle" font-size="10" font-weight="700" fill="#15803d">= UNA fila ✓</text>`;
+    th += `</g>`;
     tab.innerHTML = th;
     requestAnimationFrame(() => requestAnimationFrame(() => {
       for (const el of tab.children) el.style.opacity = "1";
