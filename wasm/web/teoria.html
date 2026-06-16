@@ -839,42 +839,79 @@ Dirección General Adjunta de Investigación · Laboratorio de Ciencia de Datos<
 <p>Eso lo vuelve perfecto para aprender: lees la explicación, ejecutas la celda, <b>ves el efecto al instante</b>, cambias un parámetro y vuelves a ejecutar. El taller entero es un cuaderno; esta página imita su forma para que llegues entrenado.</p>
 </div>
 <div class="cell fig"><span class="gut">[figura 8]</span>
-<div class="ibar"><button class="ibtn" id="bRun" onclick="runNb()">▶ Ejecutar el cuaderno</button></div>
-<svg viewBox="0 0 760 310" role="img" aria-label="Cuaderno Jupyter en acción">
-<rect x="140" y="14" width="480" height="282" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
-<text x="380" y="38" text-anchor="middle" fill="#64748b" font-size="11.5" font-family="Consolas,monospace">Mi_Taller.ipynb</text>
-<!-- celda md -->
-<g transform="translate(160,52)">
-  <rect width="440" height="34" rx="6" fill="#ffffff" stroke="#e2e8f0"/>
-  <text x="12" y="22" fill="#334155" font-size="12.5"><tspan font-weight="700"># Paso 1.</tspan> Leer la imagen satelital (texto explicativo)</text>
+<div class="ibar">
+  <button class="ibtn" id="bRun" onclick="runCell()">▶ Ejecutar la celda actual</button>
+  <button class="ibtn" id="bAll" onclick="runAll()">⏬ Ejecutar todas</button>
+  <button class="ibtn" onclick="restartNb()">↻ Reiniciar kernel</button>
+</div>
+<svg viewBox="0 0 760 372" role="img" aria-label="Mini-tutorial de un cuaderno Jupyter: ejecutar la celda actual, contador de ejecucion y kernel">
+<!-- panel cuaderno -->
+<rect x="16" y="48" width="476" height="312" rx="10" fill="#ffffff" stroke="#cbd5e1"/>
+<rect x="16" y="48" width="476" height="22" rx="10" fill="#f1f5f9"/>
+<circle cx="31" cy="59" r="3.3" fill="#f87171"/><circle cx="43" cy="59" r="3.3" fill="#fbbf24"/><circle cx="55" cy="59" r="3.3" fill="#4ade80"/>
+<text x="254" y="63" text-anchor="middle" fill="#64748b" font-size="10.5" font-family="Consolas,monospace">Taller_ML.ipynb</text>
+<!-- barra de herramientas -->
+<rect x="24" y="76" width="460" height="24" rx="5" fill="#f8fafc" stroke="#e2e8f0"/>
+<g font-size="11">
+  <text x="34" y="92">💾</text><text x="58" y="92">➕</text><text x="82" y="92">✂️</text>
+  <rect x="110" y="79" width="62" height="18" rx="4" fill="#0ea5e9"/><text x="141" y="91.5" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">▶ Run</text>
+  <text x="184" y="92">⏹️</text><text x="208" y="92">↻</text>
+  <rect x="236" y="79" width="74" height="18" rx="4" fill="#fff" stroke="#cbd5e1"/><text x="273" y="91.5" text-anchor="middle" font-size="9.5" fill="#475569">Código ▾</text>
+  <circle id="nbDot" cx="430" cy="88" r="4" fill="#22c55e"/><text id="nbStat" x="440" y="91.5" font-size="9.5" fill="#475569">Idle</text>
 </g>
-<!-- celda código 1 -->
-<g transform="translate(160,96)">
-  <rect width="440" height="36" rx="6" fill="#eef2ff" stroke="#c7d2fe" id="c1box"/>
-  <text x="12" y="23" fill="#3730a3" font-size="12.5" font-family="Consolas,monospace">img = rasterio.open("ags_landsat_30m.tif").read()</text>
-  <text x="-14" y="23" fill="#94a3b8" font-size="11" font-family="Consolas,monospace" text-anchor="end" id="c1n">[ ]</text>
+<!-- celda Markdown -->
+<g transform="translate(36,108)">
+  <rect width="444" height="30" rx="5" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="10" y="20" fill="#0f172a" font-size="12.5" font-weight="700"># Paso 1: leer la imagen</text>
+  <text x="438" y="11" text-anchor="end" font-size="8" fill="#94a3b8">Markdown</text>
 </g>
-<g transform="translate(160,140)" id="c1out" opacity="0">
-  <rect width="440" height="26" rx="5" fill="#f0fdf4" stroke="#bbf7d0"/>
-  <text x="12" y="17" fill="#15803d" font-size="12" font-family="Consolas,monospace">✓ imagen: 6 bandas × 3335 × 3696 píxeles — todo Aguascalientes</text>
+<!-- celda Código A (seleccionada) -->
+<g transform="translate(36,146)">
+  <rect x="-10" y="-1" width="4" height="32" rx="2" fill="#0ea5e9"/>
+  <text x="-14" y="20" text-anchor="end" font-size="10" fill="#94a3b8" font-family="Consolas,monospace" id="c1n">[ ]</text>
+  <rect width="444" height="30" rx="5" fill="#eef2ff" stroke="#c7d2fe"/>
+  <text x="10" y="20" fill="#3730a3" font-size="11.5" font-family="Consolas,monospace">img = rasterio.open("ags.tif").read()</text>
+  <text x="438" y="11" text-anchor="end" font-size="8" fill="#94a3b8">Código · seleccionada</text>
 </g>
-<!-- celda código 2 -->
-<g transform="translate(160,176)">
-  <rect width="440" height="36" rx="6" fill="#eef2ff" stroke="#c7d2fe" id="c2box"/>
-  <text x="12" y="23" fill="#3730a3" font-size="12.5" font-family="Consolas,monospace">seg = shepherd(img); plt.imshow(seg)</text>
-  <text x="-14" y="23" fill="#94a3b8" font-size="11" font-family="Consolas,monospace" text-anchor="end" id="c2n">[ ]</text>
+<g id="c1out" opacity="0" transform="translate(36,180)">
+  <rect width="444" height="24" rx="5" fill="#f0fdf4" stroke="#bbf7d0"/>
+  <text x="10" y="16" fill="#15803d" font-size="11" font-family="Consolas,monospace">✓ 6 bandas × 3335 × 3696 — todo Aguascalientes</text>
 </g>
-<g transform="translate(160,220)" id="c2out" opacity="0">
-  <rect width="440" height="60" rx="5" fill="#ffffff" stroke="#e2e8f0"/>
-  <g transform="translate(150,8)">
-    <rect x="0" y="0" width="44" height="44" fill="#84cc16"/><rect x="44" y="0" width="56" height="22" fill="#e11d48"/>
-    <rect x="44" y="22" width="56" height="22" fill="#0ea5e9"/><rect x="100" y="0" width="38" height="44" fill="#eab308"/>
+<!-- celda Código B -->
+<g transform="translate(36,212)">
+  <text x="-14" y="20" text-anchor="end" font-size="10" fill="#94a3b8" font-family="Consolas,monospace" id="c2n">[ ]</text>
+  <rect width="444" height="30" rx="5" fill="#eef2ff" stroke="#c7d2fe"/>
+  <text x="10" y="20" fill="#3730a3" font-size="11.5" font-family="Consolas,monospace">seg = shepherd(img); plt.imshow(seg)</text>
+</g>
+<g id="c2out" opacity="0" transform="translate(36,246)">
+  <rect width="444" height="46" rx="5" fill="#ffffff" stroke="#e2e8f0"/>
+  <g transform="translate(14,6)"><rect width="34" height="34" fill="#84cc16"/><rect x="34" width="44" height="17" fill="#e11d48"/><rect x="34" y="17" width="44" height="17" fill="#0ea5e9"/><rect x="78" width="30" height="34" fill="#eab308"/></g>
+  <text x="128" y="27" fill="#475569" font-size="11">⬅ el resultado aparece debajo de la celda</text>
+</g>
+<text x="254" y="348" text-anchor="middle" fill="#64748b" font-size="10.5">Kernel: Python 3 (Pyodide)</text>
+<!-- guía rápida -->
+<g transform="translate(508,48)">
+  <rect width="236" height="312" rx="10" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="118" y="26" text-anchor="middle" fill="#0f172a" font-size="12.5" font-weight="700">Guía rápida de Jupyter</text>
+  <g font-size="10.5">
+    <text x="14" y="56" font-weight="700" fill="#0369a1">▶ / Shift + Enter</text>
+    <text x="14" y="71" fill="#475569">ejecuta la celda actual y avanza</text>
+    <text x="14" y="98" font-weight="700" fill="#0369a1">Ctrl + Enter</text>
+    <text x="14" y="113" fill="#475569">ejecuta y se queda en la celda</text>
+    <text x="14" y="140" font-weight="700" fill="#0369a1" font-family="Consolas,monospace">[ ] → [*] → [1]</text>
+    <text x="14" y="155" fill="#475569">vacía · corriendo · orden de</text>
+    <text x="14" y="168" fill="#475569">ejecución</text>
+    <text x="14" y="195" font-weight="700" fill="#0369a1">⏬ Ejecutar todas</text>
+    <text x="14" y="210" fill="#475569">corre el cuaderno de arriba abajo</text>
+    <text x="14" y="237" font-weight="700" fill="#0369a1">Markdown / Código</text>
+    <text x="14" y="252" fill="#475569">celdas de texto y de Python</text>
+    <text x="14" y="279" font-weight="700" fill="#0369a1">Kernel = el motor</text>
+    <text x="14" y="294" fill="#475569">↻ Reiniciar borra todo y</text>
+    <text x="14" y="307" fill="#475569">empieza de cero</text>
   </g>
-  <text x="320" y="34" fill="#475569" font-size="11.5">⬅ ¡el resultado aparece debajo!</text>
 </g>
-<text x="380" y="306" text-anchor="middle" fill="#475569" font-size="12.5">leer → ejecutar → ver → ajustar → repetir: así se aprende ciencia de datos</text>
 </svg>
-<span class="try">⬆ interactivo: así se siente ejecutar celdas — en el taller lo harás de verdad</span>
+<span class="try">⬆ pruébalo: ejecuta la celda actual, ejecuta todas o reinicia el kernel — y observa el contador [ ]→[*]→[N] y el estado del kernel</span>
 </div>
 
 <!-- ════════ 9 · WASM ════════ -->
@@ -1903,27 +1940,47 @@ function f9esc(n) {
     mor.textContent = "El sandbox WASM NO puede ver tu disco: ni leerlo ni escribirlo ni listarlo. La única puerta es la compuerta verde: archivos que TÚ subes (⬆) o descargas (⬇) con un clic explícito. Eso es lo que significa 'caja de arena' de verdad — y por eso este taller es seguro para cualquier oficina.";
   }
 }
-// ---------- figura 8: cuaderno ----------
+// ---------- figura 8: mini-tutorial de cuaderno Jupyter ----------
 let nbRunning = false;
-function runNb() {
-  if (nbRunning) return;
-  nbRunning = true;
-  const b = document.getElementById("bRun");
-  b.textContent = "ejecutando…"; b.classList.add("on");
+function nbStatus(busy) {
+  document.getElementById("nbDot").setAttribute("fill", busy ? "#f59e0b" : "#22c55e");
+  document.getElementById("nbStat").textContent = busy ? "Busy" : "Idle";
+}
+function runCell() {                         // ejecutar la celda actual (A)
+  if (nbRunning) return; nbRunning = true;
+  const b = document.getElementById("bRun"); b.classList.add("on");
+  document.getElementById("c1n").textContent = "[*]"; nbStatus(true);
+  setTimeout(() => {
+    document.getElementById("c1n").textContent = "[1]";
+    document.getElementById("c1out").setAttribute("opacity", "1");
+    nbStatus(false); b.classList.remove("on"); nbRunning = false;
+  }, 1000);
+}
+function runAll() {                          // ejecutar todas las celdas
+  if (nbRunning) return; nbRunning = true;
+  const b = document.getElementById("bAll"); b.classList.add("on"); nbStatus(true);
   document.getElementById("c1out").setAttribute("opacity", "0");
   document.getElementById("c2out").setAttribute("opacity", "0");
   document.getElementById("c1n").textContent = "[*]";
+  document.getElementById("c2n").textContent = "[ ]";
   setTimeout(() => {
     document.getElementById("c1n").textContent = "[1]";
     document.getElementById("c1out").setAttribute("opacity", "1");
     document.getElementById("c2n").textContent = "[*]";
-  }, 900);
+  }, 1000);
   setTimeout(() => {
     document.getElementById("c2n").textContent = "[2]";
     document.getElementById("c2out").setAttribute("opacity", "1");
-    b.textContent = "▶ Ejecutar de nuevo"; b.classList.remove("on");
-    nbRunning = false;
+    nbStatus(false); b.classList.remove("on"); nbRunning = false;
   }, 2200);
+}
+function restartNb() {                       // reiniciar el kernel
+  if (nbRunning) return;
+  document.getElementById("c1n").textContent = "[ ]";
+  document.getElementById("c2n").textContent = "[ ]";
+  document.getElementById("c1out").setAttribute("opacity", "0");
+  document.getElementById("c2out").setAttribute("opacity", "0");
+  nbStatus(false);
 }
 // init
 buildBarras(); firma("agua"); segInit(); f5init(); f6init(); f9esc(1); gmInit(); figModalInit(); animPausaInit();

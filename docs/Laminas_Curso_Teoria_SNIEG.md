@@ -60,14 +60,14 @@ Se elige un objeto (**🌾 parcela · 💧 presita · 🏙️ manzana**) y se an
 ## Lámina 17 — Teoría 7: aprendizaje automático (texto)
 Receta del taller: depurar (objetos puros ≥90 %), balancear clases, separar 70/30, entrenar (StandardScaler → MLP apilado → ExtraTrees) y evaluar con matriz de confusión sobre el 30 % no visto. Exactitud de referencia ~94 %.
 
-## Lámina 18 — Figura 7: pipeline de clasificación apilado (animada)
-Botón "▶ Entrenar". Seis pasos: dataset 70/30 → **StandardScaler** (escala pareja) → la **red MLP opina** (P(urb)/P(no)) → **stacking**: la opinión se **anexa** al vector (12 → 15 características) → **ExtraTrees** vota (conteo en vivo, p. ej. 87/13 → clase URBANO) → **examen final** (matriz de confusión + medidor a ~94 %).
+## Lámina 18 — Figura 7: pipeline de clasificación (vertical, animada)
+Flujo **vertical de arriba abajo** que empieza en la **tabla de datos** (de la figura 6) como punto de partida, con la condición explícita: características en NÚMEROS + una columna de ETIQUETA (clase, resaltada). Baja paso a paso por 7 etapas numeradas: 1 depurar (objetos puros ≥90 %), 2 balancear, 3 separar 70/30, 4 escalar (StandardScaler), 5 entrenar (la red MLP opina → stacking → 100 árboles ExtraTrees votan), 6 evaluar (matriz + ~94 %), 7 clasificar todo → el mapa. Cierra en "datos → clasificación". Botón "▶ recorrer el flujo" que ilumina cada tarjeta en secuencia.
 
 ## Lámina 19 — Teoría 8: ¿qué es un cuaderno Jupyter? (texto)
 El cuaderno como libreta de laboratorio: celdas de texto y celdas de **código** ejecutables con Shift+Enter que muestran su resultado debajo. Ideal para aprender: leer, ejecutar, ver el efecto, cambiar y repetir.
 
-## Lámina 20 — Figura 8: cuaderno en acción (interactiva)
-Maqueta de un `.ipynb` con celdas; botón "▶ Ejecutar el cuaderno" que muestra los contadores de ejecución `[*] → [1]/[2]` y las salidas apareciendo bajo cada celda (texto y un mini-resultado gráfico).
+## Lámina 20 — Figura 8: mini-tutorial de Jupyter (interactiva)
+Maqueta realista de un `.ipynb`: barra de título, **barra de herramientas** (guardar, agregar, ▶ Run, ⏹, ↻, selector de tipo de celda) y **estado del kernel** (Idle/Busy). Celdas: una **Markdown** y dos de **Código**, la primera marcada como seleccionada. Tres botones interactivos — **Ejecutar la celda actual**, **Ejecutar todas**, **Reiniciar kernel** — que mueven el contador `[ ] → [*] → [N]`, muestran las salidas y cambian el estado del kernel. Panel lateral "Guía rápida de Jupyter": Shift+Enter, Ctrl+Enter, el contador de ejecución, Ejecutar todas, Markdown vs Código y qué es el kernel.
 
 ## Lámina 21 — Teoría 9: ¿dónde corre Python? WebAssembly (texto)
 WASM + Pyodide permiten correr Python científico **dentro del navegador**, en una caja de arena: cero instalación, cero permisos, los datos no salen del equipo, sin rastro al cerrar. Plantea la anatomía del sandbox y la pregunta "¿qué pasa si borro todos los archivos?".
