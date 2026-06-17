@@ -57,6 +57,8 @@ if ($check.Contains($mojibake + [char]0x83)) { throw "encoding roto: mojibake de
 Copy-Item (Join-Path $Wasm "web\teoria.html") $Site
 Copy-Item (Join-Path $Wasm "web\leaflet-side-by-side.js") $Site
 Copy-Item (Join-Path $Wasm "web\snieg_logo.png") $Site
+# config para el espejo en Netlify (respaldo si TI bloquea GitHub)
+Copy-Item (Join-Path $Wasm "web\netlify.toml") $Site
 
 # sanity: el index final DEBE tener el bloque
 if ((Get-Content (Join-Path $Site "index.html") -Raw) -notmatch "jupyter-config-data") {

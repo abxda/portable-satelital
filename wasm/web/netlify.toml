@@ -1,0 +1,9 @@
+# ───────────────────────────────────────────────────────────────────────────
+#  Espejo del curso en Netlify — respaldo cuando GitHub está bloqueado por TI.
+#  El sitio (JupyterLite + portada + teoría) YA viene construido: Netlify NO
+#  compila nada, solo sirve los archivos estáticos de esta carpeta (la raíz
+#  de la rama gh-pages, o la carpeta que arrastres en "deploy manual").
+# ───────────────────────────────────────────────────────────────────────────
+[build]
+  publish = "."
+  command = ""
