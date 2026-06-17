@@ -59,6 +59,12 @@ Copy-Item (Join-Path $Wasm "web\leaflet-side-by-side.js") $Site
 Copy-Item (Join-Path $Wasm "web\snieg_logo.png") $Site
 # config para el espejo en Netlify (respaldo si TI bloquea GitHub)
 Copy-Item (Join-Path $Wasm "web\netlify.toml") $Site
+# PDF de la presentacion + zip portable de la teoria (descargables desde el sitio/espejo)
+$Py = Join-Path $Root "dist\qaenv\Scripts\python.exe"
+if (Test-Path (Join-Path $Root "dist\Curso_Teoria_SNIEG.pdf")) {
+  Copy-Item (Join-Path $Root "dist\Curso_Teoria_SNIEG.pdf") $Site
+}
+& $Py (Join-Path $Root "dist\gen_teoria_zip.py") (Join-Path $Site "Teoria_Portable.zip")
 
 # sanity: el index final DEBE tener el bloque
 if ((Get-Content (Join-Path $Site "index.html") -Raw) -notmatch "jupyter-config-data") {

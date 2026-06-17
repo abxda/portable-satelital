@@ -24,6 +24,18 @@ Para desinstalar: cierra la ventana y borra la carpeta. Eso es todo.
 > 💡 Dentro de los cuadernos puedes instalar bibliotecas extra con `%pip install <paquete>`;
 > quedan dentro de tu laboratorio portable, sin tocar el resto del equipo.
 
+## Alternativas en línea (sin instalar nada)
+
+[![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/abxda/portable-satelital/blob/main/colab/Taller_ML_Urbano_Colab.ipynb)
+
+- **Google Colab** — el taller completo sobre Python real en la nube de Google (motor
+  [`pyshepseg`](https://github.com/ubarsc/pyshepseg)):
+  [`colab/Taller_ML_Urbano_Colab.ipynb`](colab/Taller_ML_Urbano_Colab.ipynb).
+- **Navegador (WebAssembly)** — el mismo taller sin instalar nada, con `shepherd-wasm`:
+  [curso en línea](https://abxda.github.io/portable-satelital/).
+- **Teoría portable** — la página interactiva de teoría para bajar y abrir con doble clic
+  (`Teoria_Portable.zip`, disponible desde el sitio del curso). Útil si tu red bloquea GitHub.
+
 ## Qué incluye el laboratorio
 
 | Pieza | Detalle |
