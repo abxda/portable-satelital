@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Curso de Análisis de Imágenes Satelitales · Dr. Abel Coronado</title>
+<!-- IMPORTANTE: JupyterLite (config-utils.js) hereda configuracion leyendo el
+     jupyter-config-data de los index.html PADRES. El deploy inyecta aqui el
+     bloque del index.html generado por jupyter lite build; sin el, /lab muere
+     con "Cannot read properties of null (reading 'textContent')". -->
+<script id="jupyter-config-data" type="application/json" data-jupyter-lite-root=".">
+      {}
+    </script>
+<style>
+  :root{--bg:#ffffff;--panel:#ffffff;--panel2:#f1f5f9;--text:#1e293b;--dim:#64748b;
+        --cy:#0C57BA;--line:#e2e8f0;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,sans-serif;line-height:1.7}
+  .wrap{max-width:980px;margin:0 auto;padding:40px 22px 60px}
+  a{text-decoration:none;color:inherit}
+  .hero{text-align:center;padding:18px 0 8px}
+  h1{font-size:38px;line-height:1.2;margin:14px 0 10px;
+     background:linear-gradient(90deg,#0C57BA,#1AA3E1);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--dim);font-size:17px;max-width:640px;margin:0 auto}
+  .badge{display:inline-block;margin-top:14px;padding:6px 16px;border-radius:999px;font-size:13px;
+         background:rgba(2,132,199,.08);color:#0369a1;border:1px solid rgba(2,132,199,.3)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:18px;margin-top:38px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px 24px;
+        transition:transform .15s, border-color .15s;display:block;
+        box-shadow:0 1px 4px rgba(15,23,42,.06)}
+  .card:hover{transform:translateY(-4px);border-color:var(--cy)}
+  .card .ic{font-size:34px}
+  .card h2{font-size:20px;margin:10px 0 8px;color:#0f172a}
+  .card p{color:var(--dim);font-size:14.5px}
+  .card .go{display:inline-block;margin-top:14px;color:var(--cy);font-weight:700;font-size:14px}
+  footer{text-align:center;color:var(--dim);font-size:12.5px;margin-top:48px;line-height:1.8}
+  footer a{color:var(--cy)}
+  .num{font-size:12px;color:var(--dim);letter-spacing:.12em;text-transform:uppercase}
+</style>
+</head>
+<body><div class="wrap">
+
+<div style="height:5px;border-radius:3px;background:linear-gradient(90deg,#0C57BA 0 25%,#1AA3E1 25% 50%,#6DAE3D 50% 75%,#F8BE2C 75% 100%)"></div>
+<div style="display:flex;justify-content:flex-end;margin:10px 0 0">
+  <img src="./snieg_logo.png" alt="Sistema Nacional de Información Estadística y Geográfica (SNIEG)" style="height:46px;opacity:.92"/>
+</div>
+
+<div class="hero">
+  <!-- mini satélite animado -->
+  <svg viewBox="0 0 240 110" width="240" style="margin:0 auto;display:block">
+    <g fill="#0284c7" opacity=".6">
+      <circle cx="30" cy="20" r="1.5"><animate attributeName="opacity" values=".2;1;.2" dur="3s" repeatCount="indefinite"/></circle>
+      <circle cx="210" cy="30" r="1.3"><animate attributeName="opacity" values="1;.2;1" dur="4s" repeatCount="indefinite"/></circle>
+      <circle cx="120" cy="12" r="1.2"><animate attributeName="opacity" values=".4;1;.4" dur="2.4s" repeatCount="indefinite"/></circle>
+    </g>
+    <ellipse cx="120" cy="96" rx="100" ry="13" fill="#f1f5f9"/>
+    <ellipse cx="120" cy="96" rx="100" ry="13" fill="none" stroke="#94a3b8" stroke-dasharray="4 6"/>
+    <g>
+      <animateTransform attributeName="transform" type="translate" values="55,48; 185,48; 55,48" dur="7s" repeatCount="indefinite"/>
+      <g transform="rotate(-10)">
+        <rect x="-26" y="-4" width="16" height="9" rx="1.5" fill="#1d4ed8" stroke="#60a5fa" stroke-width=".8"/>
+        <rect x="10" y="-4" width="16" height="9" rx="1.5" fill="#1d4ed8" stroke="#60a5fa" stroke-width=".8"/>
+        <rect x="-7" y="-7" width="14" height="14" rx="2.5" fill="#e2e8f0" stroke="#94a3b8"/>
+        <circle cx="0" cy="13" r="3" fill="#38bdf8"><animate attributeName="opacity" values="1;.2;1" dur="1s" repeatCount="indefinite"/></circle>
+      </g>
+    </g>
+    <polygon points="120,58 104,92 136,92" fill="#38bdf8" opacity=".12">
+      <animateTransform attributeName="transform" type="translate" values="-65,0; 65,0; -65,0" dur="7s" repeatCount="indefinite"/>
+    </polygon>
+  </svg>
+  <div class="num">Curso para servidoras y servidores públicos</div>
+  <h1>Análisis de Imágenes Satelitales<br/>con Machine Learning</h1>
+  <p class="sub">Del píxel al mapa de decisión: percepción remota, segmentación y aprendizaje
+  automático — con laboratorios que corren <b>en tu navegador o en una carpeta portable</b>, sin instalar nada.</p>
+  <div class="badge">🛡️ Software verificable de punta a punta · datos abiertos · cero instalación</div>
+</div>
+
+<div class="cards">
+  <a class="card" href="./teoria.html">
+    <div class="ic">📖</div>
+    <div class="num">Paso 1</div>
+    <h2>La teoría, desde cero</h2>
+    <p>¿Cómo ve un satélite? ¿Qué es la geomediana, un objeto, una red neuronal? Conceptos
+    ilustrados con animaciones — sin requisitos previos.</p>
+    <span class="go">Leer la teoría ⟶</span>
+  </a>
+  <a class="card" href="./lab/index.html?path=Taller_ML_Urbano_WASM.ipynb">
+    <div class="ic">🛰️</div>
+    <div class="num">Paso 2</div>
+    <h2>El taller interactivo</h2>
+    <p>Clasifica <b>todo el estado de Aguascalientes</b> con una imagen calidad Landsat
+    (30 m) derivada de Sentinel-2: segmenta, construye tu verdad-terreno INEGI, entrena
+    una red neuronal y produce el mapa urbano estatal — dentro de esta pestaña, vía WebAssembly.</p>
+    <span class="go">Abrir el taller ⟶</span>
+    <p style="font-size:11.5px;color:#94a3b8;margin-top:10px">🔄 ¿Ya lo habías corrido y quieres empezar de cero? Tu navegador guarda TU copia.
+    En el Lab: clic derecho sobre el cuaderno → <b>Delete</b> → recarga la página, y recibirás la versión original.</p>
+  </a>
+  <a class="card" href="https://github.com/abxda/portable-satelital/releases/latest">
+    <div class="ic">💻</div>
+    <div class="num">Paso 3</div>
+    <h2>El laboratorio portable</h2>
+    <p>El siguiente nivel de detalle: la geomediana Sentinel-2 completa (10 m, 12 bandas,
+    2.5 GB) e imágenes frescas descargadas desde Google Earth Engine. SatLab: un ejecutable
+    que instala JupyterLab + stack geoespacial verificado, en Windows y Linux.</p>
+    <span class="go">Descargar SatLab ⟶</span>
+  </a>
+</div>
+
+<div style="max-width:1000px;margin:22px auto 0;text-align:center">
+  <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
+    <a href="./Teoria_Portable.zip" download
+       style="display:inline-block;padding:11px 18px;border:2px solid #0ea5e9;color:#0369a1;
+              border-radius:10px;font-weight:700;text-decoration:none;background:#f0f9ff">
+      📥 Descargar la teoría (offline, .zip)</a>
+    <a href="https://colab.research.google.com/github/abxda/portable-satelital/blob/main/colab/Taller_ML_Urbano_Colab.ipynb"
+       target="_blank" rel="noopener"
+       style="display:inline-block;padding:11px 18px;background:#0ea5e9;color:#fff;
+              border-radius:10px;font-weight:700;text-decoration:none">
+      ▶️ Abrir el taller en Google Colab</a>
+  </div>
+  <p style="font-size:12px;color:#94a3b8;margin-top:10px">
+    ¿GitHub bloqueado en tu red? El <b>.zip de teoría</b> corre con doble clic (sin internet salvo el mapa en vivo);
+    <b>Colab</b> abre el mismo taller en la nube de Google, sin instalar nada.</p>
+</div>
+
+<footer>
+  <b>Dr. Abel Alejandro Coronado Iruegas</b> · @abxda<br/>
+  Código abierto y cadena de verificación: <a href="https://github.com/abxda/portable-satelital">portable-satelital</a> ·
+  <a href="https://github.com/abxda/shepherd-wasm">shepherd-wasm</a> ·
+  <a href="https://github.com/abxda/portable-satelital/blob/main/VERIFICACION.md">guía para áreas de TI</a><br/>
+  Materiales del curso: contenido <b>abxda × Claude</b> · datos Sentinel-2 (Copernicus) e INEGI
+</footer>
+</div></body></html>

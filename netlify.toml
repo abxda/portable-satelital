@@ -1,0 +1,16 @@
+# ───────────────────────────────────────────────────────────────────────────
+#  Espejo del curso en Netlify — respaldo cuando GitHub está bloqueado por TI.
+#  El sitio (JupyterLite + portada + teoría) YA viene construido: Netlify NO
+#  compila nada, solo sirve los archivos estáticos de esta carpeta (la raíz
+#  de la rama gh-pages, o la carpeta que arrastres en "deploy manual").
+# ───────────────────────────────────────────────────────────────────────────
+[build]
+  publish = "."
+  command = ""
+
+# CRÍTICO para JupyterLite: usa Module Federation (archivos remoteEntry.<hash>.js
+# y chunks cargados por nombre exacto). El post-procesado de Netlify
+# (bundle/minify de JS/CSS y "pretty URLs") rompe esos nombres y el kernel de
+# Pyodide no se registra → "No Kernel". Hay que desactivarlo por completo:
+[build.processing]
+  skip_processing = true

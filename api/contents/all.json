@@ -1,0 +1,57 @@
+{
+  "content": [
+    {
+      "content": null,
+      "created": "2026-06-17T14:50:18.287827Z",
+      "format": null,
+      "hash": null,
+      "hash_algorithm": null,
+      "last_modified": "2026-06-17T14:50:18.306154Z",
+      "mimetype": null,
+      "name": "anim",
+      "path": "anim",
+      "size": null,
+      "type": "directory",
+      "writable": true
+    },
+    {
+      "content": null,
+      "created": "2026-06-17T14:50:18.307147Z",
+      "format": null,
+      "hash": null,
+      "hash_algorithm": null,
+      "last_modified": "2026-06-10T21:19:49.724311Z",
+      "mimetype": null,
+      "name": "Mi_Lienzo.ipynb",
+      "path": "Mi_Lienzo.ipynb",
+      "size": 4798,
+      "type": "notebook",
+      "writable": true
+    },
+    {
+      "content": null,
+      "created": "2026-06-17T14:50:18.308151Z",
+      "format": null,
+      "hash": null,
+      "hash_algorithm": null,
+      "last_modified": "2026-06-17T03:14:37.074004Z",
+      "mimetype": null,
+      "name": "Taller_ML_Urbano_WASM.ipynb",
+      "path": "Taller_ML_Urbano_WASM.ipynb",
+      "size": 189830,
+      "type": "notebook",
+      "writable": true
+    }
+  ],
+  "created": "2026-06-17T14:50:18.287827Z",
+  "format": "json",
+  "hash": null,
+  "hash_algorithm": null,
+  "last_modified": "2026-06-17T14:50:18.308151Z",
+  "mimetype": null,
+  "name": "",
+  "path": "",
+  "size": null,
+  "type": "directory",
+  "writable": true
+}

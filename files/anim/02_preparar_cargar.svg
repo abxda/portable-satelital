@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 190" width="760" height="190" font-family="Segoe UI,system-ui,sans-serif">
+<rect width="760" height="190" fill="#ffffff"/>
+<text x="20" y="26" font-size="15" font-weight="700" fill="#0f172a">Instalar la herramienta y traer la imagen estatal</text>
+
+<g transform="translate(40,58)">
+  <rect width="92" height="60" rx="8" fill="#fef3c7" stroke="#d97706"/>
+  <text x="46" y="26" text-anchor="middle" font-size="11" font-weight="700" fill="#92400e">📦 pip</text>
+  <text x="46" y="44" text-anchor="middle" font-size="9.5" fill="#92400e" font-family="Consolas,monospace">shepherd-wasm</text>
+  <animateTransform attributeName="transform" type="translate" values="40,58;40,64;40,58" dur="2s" repeatCount="indefinite"/>
+</g>
+<path d="M150,88 h40" stroke="#0ea5e9" stroke-width="4"/><path d="M190,88 l-9,-6 v12 Z" fill="#0ea5e9"/>
+<g transform="translate(210,46)">
+  <rect width="120" height="84" rx="8" fill="#f0fdf4" stroke="#16a34a"/>
+  <text x="60" y="24" text-anchor="middle" font-size="11.5" font-weight="700" fill="#15803d">🧰 caja de</text>
+  <text x="60" y="40" text-anchor="middle" font-size="11.5" font-weight="700" fill="#15803d">herramientas</text>
+  <text x="60" y="62" text-anchor="middle" font-size="9.5" fill="#475569">numpy · rasterio</text>
+  <text x="60" y="76" text-anchor="middle" font-size="9.5" fill="#475569">shepherd · sklearn</text>
+</g>
+<g transform="translate(420,46)">
+  <rect width="96" height="34" rx="6" fill="#f8fafc" stroke="#94a3b8"/>
+  <text x="48" y="21" text-anchor="middle" font-size="10" fill="#475569">📁 mis_datos</text>
+  <rect y="50" width="96" height="34" rx="6" fill="#f8fafc" stroke="#94a3b8"/>
+  <text x="48" y="71" text-anchor="middle" font-size="10" fill="#475569">🌐 internet</text>
+</g>
+<g>
+  <rect x="430" y="92" width="74" height="22" rx="4" fill="#0ea5e9" opacity=".9">
+    <animateTransform attributeName="transform" type="translate" values="0,0;160,12;160,12" keyTimes="0;.55;1" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values=".9;.9;0" keyTimes="0;.8;1" dur="3s" repeatCount="indefinite"/></rect>
+  <text x="467" y="107" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">ags_landsat_30m.tif
+    <animateTransform attributeName="transform" type="translate" values="0,0;160,12;160,12" keyTimes="0;.55;1" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;1;0" keyTimes="0;.8;1" dur="3s" repeatCount="indefinite"/></text>
+</g>
+<g transform="translate(596,84)">
+  <rect width="124" height="58" rx="8" fill="#eef2ff" stroke="#6366f1"/>
+  <text x="62" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#4338ca">💾 /tmp</text>
+  <text x="62" y="42" text-anchor="middle" font-size="9.5" fill="#475569">el disco rápido del kernel</text>
+</g>
+<text x="20" y="178" font-size="12.5" fill="#475569">pip instala shepherd-wasm; luego la imagen (176 MB, todo Aguascalientes) llega a /tmp desde mis_datos o internet — una sola vez.</text>
+</svg>

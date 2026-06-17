@@ -1,0 +1,28 @@
+{
+  "shepherd-wasm": {
+    "releases": {
+      "1.1.0": [
+        {
+          "comment_text": "",
+          "digests": {
+            "md5": "8559084eaf47aff5faae5871c1601e75",
+            "sha256": "580b1b012160867985bc6446c6e93ff5f0a37bf548a16c9786bed902332bd25c"
+          },
+          "downloads": -1,
+          "filename": "shepherd_wasm-1.1.0-py3-none-any.whl",
+          "has_sig": false,
+          "md5_digest": "8559084eaf47aff5faae5871c1601e75",
+          "packagetype": "bdist_wheel",
+          "python_version": "py3",
+          "requires_python": ">=3.9",
+          "size": 12051,
+          "upload_time": "2026-06-10T20:29:51.399836Z",
+          "upload_time_iso_8601": "2026-06-10T20:29:51.399836Z",
+          "url": "./shepherd_wasm-1.1.0-py3-none-any.whl",
+          "yanked": false,
+          "yanked_reason": null
+        }
+      ]
+    }
+  }
+}
