@@ -12,6 +12,38 @@ NO hace) en el equipo.
 
 ---
 
+## 0) Qué es, dónde se descarga y cómo se ejecuta
+
+**Qué es.** Un **laboratorio de análisis de imágenes satelitales** para capacitación: un
+solo archivo `SatLab.exe` que, al abrirse, levanta un **JupyterLab** con Python y las
+bibliotecas geoespaciales ya listas. No es un instalador: es una aplicación portable que
+vive en su propia carpeta.
+
+**Dónde se descarga (liga directa y oficial).**
+
+- **Descarga directa del ejecutable (Windows):**
+  <https://github.com/abxda/portable-satelital/releases/latest/download/SatLab.exe>
+- Página de todas las versiones y archivos (Linux, hashes, notas):
+  <https://github.com/abxda/portable-satelital/releases/latest>
+
+> Solo descargue desde estas ligas de **GitHub Releases** del repositorio oficial
+> `abxda/portable-satelital`. No lo distribuya por correo ni desde otros sitios.
+
+**Cómo se ejecuta (3 pasos).**
+
+1. Descargue `SatLab.exe` y colóquelo en una carpeta vacía (p. ej. `D:\SatLab\`).
+2. Doble clic. La primera vez descarga el entorno (~1 GB) y lo deja junto al `.exe`;
+   Windows SmartScreen mostrará un aviso (es un binario sin firma comercial — ver §1 y §4):
+   *Más información → Ejecutar de todas formas*.
+3. Se abre una ventana con JupyterLab listo para trabajar. Para quitarlo, **borre la
+   carpeta**: no deja nada fuera de ella.
+
+El resto de este documento es para su **área de TI / seguridad**: explica con qué evidencia
+verificable se comprueba la autenticidad e integridad del binario, su comportamiento de red
+y por qué pueden aparecer (y cómo desmentir) falsos positivos heurísticos.
+
+---
+
 ## 1) Qué hace el software (resumen para evaluación de riesgo)
 
 - `SatLab.exe` es una aplicación de escritorio (Windows, WebView2) **sin instalador**: no
